@@ -146,8 +146,6 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    val irt_reg  = Reg(init = UInt(0, xLen))
    tsc_reg  := tsc_reg + Mux(Bool(O3PIPEVIEW_PRINTF), UInt(O3_CYCLE_TIME), UInt(1))
    irt_reg  := irt_reg + PopCount(rob.io.commit.valids.toBits)
-   debug(tsc_reg)
-   debug(irt_reg)
 
 
    //****************************************
