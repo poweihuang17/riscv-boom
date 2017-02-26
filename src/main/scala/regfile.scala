@@ -41,11 +41,11 @@ class RegisterFile( num_registers: Int
                   , enable_bypassing: Boolean)
                   (implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new BoomBundle()(p)
+   val io = IO(new BoomBundle()(p)
    {
       val read_ports = Vec(num_read_ports, new RegisterFileReadPortIO(PREG_SZ, register_width))
       val write_ports = Vec(num_write_ports, new RegisterFileWritePortIO(PREG_SZ, register_width))
-   }
+   })
 
    // --------------------------------------------------------------
 

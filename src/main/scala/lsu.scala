@@ -135,7 +135,7 @@ class LoadStoreUnitIO(pl_width: Int)(implicit p: Parameters) extends BoomBundle(
 
 class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new LoadStoreUnitIO(pl_width)
+   val io = IO(new LoadStoreUnitIO(pl_width))
 
    val num_ld_entries = NUM_LSU_ENTRIES
    val num_st_entries = NUM_LSU_ENTRIES
@@ -1319,14 +1319,14 @@ object LoadDataGenerator
 
 class ForwardingAgeLogic(num_entries: Int)(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new Bundle
+   val io = IO(new Bundle
    {
       val addr_matches    = Input(UInt(num_entries.W)) // bit vector of addresses that match between the load and the SAQ
       val youngest_st_idx = Input(UInt(MEM_ADDR_SZ.W)) // needed to get "age"
 
       val forwarding_val  = Output(Bool())
       val forwarding_idx  = Output(UInt(MEM_ADDR_SZ.W))
-   }
+   })
 
    // generating mask that zeroes out anything younger than tail
    val age_mask = Wire(Vec(num_entries, Bool()))

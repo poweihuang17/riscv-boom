@@ -55,7 +55,7 @@ class CacheCounters() extends Bundle
 
 class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new BoomBundle()(p)
+   val io = IO(new BoomBundle()(p)
    {
       val interrupts = new rocket.TileInterrupts().asInput
       val hartid     = Input(UInt(xLen.W))
@@ -65,7 +65,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
       val ptw_tlb    = new rocket.TLBPTWIO()
       val rocc       = Flipped(new rocket.RoCCInterface())
       val counters   = new CacheCounters().asInput
-   }
+   })
 
    //**********************************
    // construct all of the modules

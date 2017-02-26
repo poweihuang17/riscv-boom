@@ -50,11 +50,11 @@ class CacheIO(implicit p: Parameters) extends BoomBundle()(p)
 
 class Prefetcher(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new Bundle
+   val io = IO(new Bundle
    {
       val core_requests = Flipped(new ValidIO(new CoreRequest))
       val cache = new CacheIO
-   }
+   })
 
 
    // ********** ENTER YOUR CODE HERE ************

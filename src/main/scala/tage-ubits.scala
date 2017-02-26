@@ -27,7 +27,7 @@ abstract class TageUbitMemory(
    ) extends Module
 {
    val index_sz = log2Up(num_entries)
-   val io = new Bundle
+   val io = IO(new Bundle
    {
       // send read addr on cycle 0, get data out on cycle 2.
       val s0_read_idx = Input(UInt(index_sz.W))
@@ -75,7 +75,7 @@ abstract class TageUbitMemory(
          this.degrade_valid := Bool(false)
          this.is_degrading := Bool(false)
       }
-   }
+   })
 
    val UBIT_MAX = (1 << ubit_sz) - 1
    val UBIT_INIT = 1

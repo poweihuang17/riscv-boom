@@ -34,7 +34,7 @@ class FetchBundle(implicit p: Parameters) extends BoomBundle()(p)
 
 class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new BoomBundle()(p)
+   val io = IO(new BoomBundle()(p)
    {
       val imem              = new rocket.FrontendIO
       val br_unit           = new BranchUnitResp().asInput
@@ -58,7 +58,7 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
 
       val stalled           = Output(Bool())
       val resp              = new DecoupledIO(new FetchBundle)
-   }
+   })
 
    val fseq_reg = Reg(init = UInt(0, xLen))
    val if_pc_next = Wire(UInt(width = vaddrBits+1))

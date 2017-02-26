@@ -209,7 +209,7 @@ class TageTable(
 {
    val index_sz = log2Up(num_entries)
 
-   val io = new TageTableIo(fetch_width, max_num_entries, max_history_length, max_tag_sz, counter_sz, this_index_sz = index_sz)
+   val io = IO(new TageTableIo(fetch_width, max_num_entries, max_history_length, max_tag_sz, counter_sz, this_index_sz = index_sz))
 
    private val CNTR_MAX = (1 << counter_sz) - 1
    private val CNTR_WEAK_TAKEN = 1 << (counter_sz-1)

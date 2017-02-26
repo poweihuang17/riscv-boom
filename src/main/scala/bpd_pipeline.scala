@@ -73,7 +73,7 @@ class BranchPrediction(implicit p: Parameters) extends BoomBundle()(p)
 
 class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new BoomBundle()(p)
+   val io = IO(new BoomBundle()(p)
    {
       val req        = Decoupled(new RedirectRequest(fetch_width))
       val imem_resp  = Flipped(Decoupled(new rocket.FrontendResp))
@@ -88,7 +88,7 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
       val brob       = new BrobBackendIo(fetch_width)
       val flush      = Input(Bool())
       val status_prv = Input(UInt(rocket.PRV.SZ.W))
-   }
+   })
 
    //-------------------------------------------------------------
    // Branch Prediction (BP1 Stage)

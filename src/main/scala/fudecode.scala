@@ -269,14 +269,14 @@ object FDivRRdDecode extends RRdDecodeConstants
 
 class RegisterReadDecode(supported_units: SupportedFuncUnits)(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new BoomBundle()(p)
+   val io = IO(new BoomBundle()(p)
    {
       val iss_valid = Input(Bool())
       val iss_uop   = new MicroOp().asInput
 
       val rrd_valid = Output(Bool())
       val rrd_uop   = new MicroOp().asOutput
-   }
+   })
 
    // Issued Instruction
    val rrd_valid = io.iss_valid

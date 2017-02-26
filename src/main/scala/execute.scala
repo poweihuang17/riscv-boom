@@ -85,8 +85,8 @@ abstract class ExecutionUnit(val num_rf_read_ports: Int
                             , val has_fdiv      : Boolean       = false
                             )(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new ExecutionUnitIO(num_rf_read_ports, num_rf_write_ports
-                               , num_bypass_stages, data_width)
+   val io = IO(new ExecutionUnitIO(num_rf_read_ports, num_rf_write_ports
+                                 , num_bypass_stages, data_width))
 
    io.resp.map(_.bits.fflags.valid := Bool(false))
 

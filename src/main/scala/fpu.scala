@@ -24,10 +24,10 @@ import _root_.util.uintToBitPat
 // to the Rocket FPU-speak
 class UOPCodeFPUDecoder extends Module
 {
-  val io = new Bundle {
+  val io = IO(new Bundle {
     val uopc = Input(Bits(UOPC_SZ.W))
     val sigs = new FPUCtrlSigs().asOutput
-  }
+  })
 
    // TODO change N,Y,X to BitPat("b1"), BitPat("b0"), and BitPat("b?")
    val N = Bool(false)
@@ -129,11 +129,11 @@ class FpuReq()(implicit p: Parameters) extends BoomBundle()(p)
 
 class FPU(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new Bundle
+   val io = IO(new Bundle
    {
       val req = Flipped(new ValidIO(new FpuReq))
       val resp = new ValidIO(new ExeUnitResp(65))
-   }
+   })
 
    // all FP units are padded out to the same latency for easy scheduling of the write port
    val fpu_latency = p(FPUKey).get.dfmaLatency

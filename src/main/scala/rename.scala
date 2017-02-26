@@ -50,7 +50,7 @@ class RenameMapTableElementIo(pl_width: Int)(implicit p: Parameters) extends Boo
 
 class RenameMapTableElement(pipeline_width: Int)(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new RenameMapTableElementIo(pipeline_width)
+   val io = IO(new RenameMapTableElementIo(pipeline_width))
 
    // Note: I don't use a "valid" signal, since it's annoying to deal with and
    // only necessary until the map tables are filled. So instead I reset the
@@ -181,7 +181,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
                     , pl_width: Int          // pipeline width ("dispatch group size")
                      )(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new FreeListIo(num_phys_registers, pl_width)
+   val io = IO(new FreeListIo(num_phys_registers, pl_width))
 
    // ** FREE LIST TABLE ** //
    val free_list = Reg(init=(~Bits(1,num_phys_registers)))
@@ -380,7 +380,7 @@ class BusyTableIo(pipeline_width:Int, num_read_ports:Int, num_wb_ports:Int)(impl
 // critical path).
 class BusyTable(pipeline_width:Int, num_read_ports:Int, num_wb_ports:Int)(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new BusyTableIo(pipeline_width, num_read_ports, num_wb_ports)
+   val io = IO(new BusyTableIo(pipeline_width, num_read_ports, num_wb_ports))
 
    def BUSY     = Bool(true)
    def NOT_BUSY = Bool(false)
@@ -464,7 +464,7 @@ class DebugRenameStageIO(implicit p: Parameters) extends BoomBundle()(p)
 
 class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) extends BoomModule()(p)
 {
-   val io = new RenameStageIO(pl_width, num_wb_ports)
+   val io = IO(new RenameStageIO(pl_width, num_wb_ports))
 
    val ren_br_vals = Wire(Vec(pl_width, Bool()))
    val freelist_can_allocate = Wire(Vec(pl_width, Bool()))
