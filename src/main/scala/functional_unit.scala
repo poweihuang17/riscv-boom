@@ -61,7 +61,7 @@ class FunctionalUnitIo(num_stages: Int
                       , data_width: Int
                       )(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val req     = (new DecoupledIO(new FuncUnitReq(data_width))).flip
+   val req     = Flipped(new DecoupledIO(new FuncUnitReq(data_width)))
    val resp    = (new DecoupledIO(new FuncUnitResp(data_width)))
 
    val brinfo  = new BrResolutionInfo().asInput
@@ -71,18 +71,18 @@ class FunctionalUnitIo(num_stages: Int
    val br_unit = new BranchUnitResp().asOutput
 
    // only used by the fpu unit
-   val fcsr_rm = UInt(INPUT, rocket.FPConstants.RM_SZ)
+   val fcsr_rm = Input(UInt(rocket.FPConstants.RM_SZ.W))
 
    // only used by branch unit
    // TODO name this, so ROB can also instantiate it
-   val get_rob_pc = new RobPCRequest().flip
+   val get_rob_pc = Flipped(new RobPCRequest())
    val get_pred = new GetPredictionInfo
    val status = new rocket.MStatus().asInput
 }
 
 class GetPredictionInfo(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val br_tag = UInt(OUTPUT, BR_TAG_SZ)
+   val br_tag = Output(UInt(BR_TAG_SZ.W))
    val info = new BranchPredictionResp().asInput
 }
 

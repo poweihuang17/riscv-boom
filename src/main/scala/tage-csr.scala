@@ -38,13 +38,13 @@ import cde.Parameters
 class CircularShiftRegisterIO(compressed_length: Int, history_length: Int) extends Bundle
 {
    // current value of the register
-   val value = UInt(OUTPUT, compressed_length)
+   val value = Output(UInt(compressed_length.W))
    // the next value that will be written into the register
-   val next  = UInt(OUTPUT, compressed_length)
+   val next  = Output(UInt(compressed_length.W))
 
-   val do_shift = Bool(INPUT)
-   val taken = Bool(INPUT)
-   val evict = Bool(INPUT)
+   val do_shift = Input(Bool())
+   val taken = Input(Bool())
+   val evict = Input(Bool())
    def shift(taken: Bool, evict: Bool) =
    {
       this.do_shift := Bool(true)
@@ -52,11 +52,11 @@ class CircularShiftRegisterIO(compressed_length: Int, history_length: Int) exten
       this.evict := evict
    }
 
-   val do_rollback= Bool(INPUT)
-   val rollback_value = UInt(INPUT, compressed_length)
-   val do_rbk_shift = Bool(INPUT)
-   val rs_new_bit = Bool(INPUT)
-   val rs_evict_bit = Bool(INPUT)
+   val do_rollback= Input(Bool())
+   val rollback_value = Input(UInt(compressed_length.W))
+   val do_rbk_shift = Input(Bool())
+   val rs_new_bit = Input(Bool())
+   val rs_evict_bit = Input(Bool())
    // we either perform a rollback or a rollback and shift
    // to handle flushes and branch mispredictions respectively.
    def rollback(v: UInt, and_shift: Bool, shift_bit: Bool=Bool(false), evict_bit: Bool=Bool(false)) =

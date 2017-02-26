@@ -342,8 +342,8 @@ class DecodeUnitIo(implicit p: Parameters) extends BoomBundle()(p)
 
    // from CSRFile
    val status = new rocket.MStatus().asInput
-   val interrupt = Bool(INPUT)
-   val interrupt_cause = UInt(INPUT, xLen)
+   val interrupt = Input(Bool())
+   val interrupt_cause = Input(UInt(xLen.W))
 
    override def cloneType: this.type = new DecodeUnitIo()(p).asInstanceOf[this.type]
 }
@@ -446,10 +446,10 @@ class BranchDecode extends Module
 {
    val io = new Bundle
    {
-      val inst    = UInt(INPUT, 32)
-      val is_br   = Bool(OUTPUT)
-      val is_jal  = Bool(OUTPUT)
-      val is_jalr = Bool(OUTPUT)
+      val inst    = Input(UInt(32.W))
+      val is_br   = Output(Bool())
+      val is_jal  = Output(Bool())
+      val is_jalr = Output(Bool())
    }
 
    val bpd_csignals =
@@ -486,9 +486,9 @@ class FetchSerializerResp(implicit p: Parameters) extends BoomBundle()(p)
 }
 class FetchSerializerIO(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val enq = new DecoupledIO(new FetchBundle()).flip
+   val enq = Flipped(new DecoupledIO(new FetchBundle()))
    val deq = new DecoupledIO(new FetchSerializerResp)
-   val kill = Bool(INPUT)
+   val kill = Input(Bool())
 }
 
 
@@ -608,7 +608,7 @@ class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) exten
       val is_full   = Vec(pl_width, Bool()).asOutput
 
       val brinfo         = new BrResolutionInfo().asInput
-      val flush_pipeline = Bool(INPUT)
+      val flush_pipeline = Input(Bool())
 
       val debug = new DebugBranchMaskGenerationLogicIO().asOutput
    }

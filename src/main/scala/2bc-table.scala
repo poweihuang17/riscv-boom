@@ -81,10 +81,10 @@ abstract class PTable(
    val index_sz = log2Up(num_entries)
    val io = new Bundle
    {
-      val s0_r_idx = UInt(INPUT, width = index_sz)
-      val s2_r_out = UInt(OUTPUT, width = fetch_width)
-      val stall    = Bool(INPUT)
-      val update   = Decoupled(new BrTableUpdate(fetch_width, index_sz)).flip
+      val s0_r_idx = Input(UInt(index_sz.W))
+      val s2_r_out = Output(UInt(fetch_width.W))
+      val stall    = Input(Bool())
+      val update   = Flipped(Decoupled(new BrTableUpdate(fetch_width, index_sz)))
    }
 
    val ridx = Wire(UInt())
@@ -165,7 +165,7 @@ class HTable(
    val io = new Bundle
    {
       // Update the h-table.
-      val update   = Valid(new UpdateEntry(fetch_width, index_sz)).flip
+      val update   = Flipped(Valid(new UpdateEntry(fetch_width, index_sz)))
       // Enqueue an update to the p-table.
       val pwq_enq  = Decoupled(new BrTableUpdate(fetch_width, index_sz))
    }
@@ -207,11 +207,11 @@ class TwobcCounterTable(
    val io = new Bundle
    {
       // send read addr on cycle 0, get data out on cycle 2.
-      val s0_r_idx = UInt(INPUT, width = index_sz)
-      val s2_r_out = UInt(OUTPUT, width = fetch_width)
-      val stall    = Bool(INPUT)
+      val s0_r_idx = Input(UInt(index_sz.W))
+      val s2_r_out = Output(UInt(fetch_width.W))
+      val stall    = Input(Bool())
 
-      val update   = Valid(new UpdateEntry(fetch_width, index_sz)).flip
+      val update   = Flipped(Valid(new UpdateEntry(fetch_width, index_sz)))
    }
 
    println ("\t\tBuilding (" +

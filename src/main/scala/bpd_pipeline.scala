@@ -76,9 +76,9 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
    val io = new BoomBundle()(p)
    {
       val req        = Decoupled(new RedirectRequest(fetch_width))
-      val imem_resp  = Decoupled(new rocket.FrontendResp).flip
-      val btb_resp   = Valid(new rocket.BTBResp).flip
-      val npc        = UInt(INPUT, width = vaddrBitsExtended)
+      val imem_resp  = Flipped(Decoupled(new rocket.FrontendResp))
+      val btb_resp   = Flipped(Valid(new rocket.BTBResp))
+      val npc        = Input(UInt(vaddrBitsExtended.W))
       val ras_update = Valid(new rocket.RASUpdate)
 
       val pred_resp  = new BranchPredictionResp().asOutput
@@ -86,8 +86,8 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
       val br_unit    = new BranchUnitResp().asInput
 
       val brob       = new BrobBackendIo(fetch_width)
-      val flush      = Bool(INPUT)
-      val status_prv = UInt(INPUT, width = rocket.PRV.SZ)
+      val flush      = Input(Bool())
+      val status_prv = Input(UInt(rocket.PRV.SZ.W))
    }
 
    //-------------------------------------------------------------

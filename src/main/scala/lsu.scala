@@ -62,45 +62,45 @@ class LoadStoreUnitIO(pl_width: Int)(implicit p: Parameters) extends BoomBundle(
    val dec_ld_vals        = Vec(pl_width,  Bool()).asInput
    val dec_uops           = Vec(pl_width, new MicroOp()).asInput
 
-   val new_ldq_idx        = UInt(OUTPUT, MEM_ADDR_SZ)
-   val new_stq_idx        = UInt(OUTPUT, MEM_ADDR_SZ)
+   val new_ldq_idx        = Output(UInt(MEM_ADDR_SZ.W))
+   val new_stq_idx        = Output(UInt(MEM_ADDR_SZ.W))
 
    // Execute Stage
-   val exe_resp           = (new ValidIO(new FuncUnitResp(xLen))).flip
+   val exe_resp           = Flipped(new ValidIO(new FuncUnitResp(xLen)))
 
    // Commit Stage
    val commit_store_mask  = Vec(pl_width, Bool()).asInput
    val commit_load_mask   = Vec(pl_width, Bool()).asInput
-   val commit_load_at_rob_head = Bool(INPUT)
+   val commit_load_at_rob_head = Input(Bool())
 
    // Send out Memory Request
-   val memreq_val         = Bool(OUTPUT)
-   val memreq_addr        = UInt(OUTPUT, corePAddrBits)
-   val memreq_wdata       = UInt(OUTPUT, xLen)
+   val memreq_val         = Output(Bool())
+   val memreq_addr        = Output(UInt(corePAddrBits.W))
+   val memreq_wdata       = Output(UInt(xLen.W))
    val memreq_uop         = new MicroOp().asOutput
 
-   val memreq_kill        = Bool(OUTPUT) // kill request sent out last cycle
+   val memreq_kill        = Output(Bool()) // kill request sent out last cycle
 
    // Forward Store Data to Register File
    // TODO turn into forward bundle
-   val forward_val        = Bool(OUTPUT)
-   val forward_data       = UInt(OUTPUT, xLen)
+   val forward_val        = Output(Bool())
+   val forward_data       = Output(UInt(xLen.W))
    val forward_uop        = new MicroOp().asOutput // the load microop (for its pdst)
 
    // Receive Memory Response
-   val memresp            = new ValidIO(new MicroOp()).flip
+   val memresp            = Flipped(new ValidIO(new MicroOp()))
 
    // Handle Branch Misspeculations
    val brinfo             = new BrResolutionInfo().asInput
 
    // Stall Decode as appropriate
-   val laq_full           = Bool(OUTPUT)
-   val stq_full           = Bool(OUTPUT)
+   val laq_full           = Output(Bool())
+   val stq_full           = Output(Bool())
 
-   val exception          = Bool(INPUT)
-   val lsu_clr_bsy_valid  = Bool(OUTPUT) // HACK: let the stores clear out the busy bit in the ROB
-   val lsu_clr_bsy_rob_idx= UInt(OUTPUT, width=ROB_ADDR_SZ)
-   val lsu_fencei_rdy     = Bool(OUTPUT)
+   val exception          = Input(Bool())
+   val lsu_clr_bsy_valid  = Output(Bool()) // HACK: let the stores clear out the busy bit in the ROB
+   val lsu_clr_bsy_rob_idx= Output(UInt(ROB_ADDR_SZ.W))
+   val lsu_fencei_rdy     = Output(Bool())
 
    val xcpt = new ValidIO(new Exception)
 
@@ -108,9 +108,9 @@ class LoadStoreUnitIO(pl_width: Int)(implicit p: Parameters) extends BoomBundle(
    val nack               = new NackInfo().asInput
 
 // causing stuff to dissapear
-//   val dmem = new DCMemPortIO().flip()
-   val dmem_is_ordered = Bool(INPUT)
-   val dmem_req_ready = Bool(INPUT)    // arbiter can back-pressure us (or MSHRs can fill up).
+//   val dmem = Flipped(new DCMemPortIO())
+   val dmem_is_ordered = Input(Bool())
+   val dmem_req_ready = Input(Bool())  // arbiter can back-pressure us (or MSHRs can fill up).
                                        // although this is also turned into a
                                        // nack two cycles later in the cache
                                        // wrapper, we can prevent spurious
@@ -121,15 +121,15 @@ class LoadStoreUnitIO(pl_width: Int)(implicit p: Parameters) extends BoomBundle(
 
    val counters = new Bundle
    {
-      val ld_valid        = Bool(OUTPUT) // a load address micro-op has entered the LSU
-      val ld_forwarded    = Bool(OUTPUT)
-      val ld_sleep        = Bool(OUTPUT)
-      val ld_killed       = Bool(OUTPUT)
-      val stld_order_fail = Bool(OUTPUT)
-      val ldld_order_fail = Bool(OUTPUT)
+      val ld_valid        = Output(Bool()) // a load address micro-op has entered the LSU
+      val ld_forwarded    = Output(Bool())
+      val ld_sleep        = Output(Bool())
+      val ld_killed       = Output(Bool())
+      val stld_order_fail = Output(Bool())
+      val ldld_order_fail = Output(Bool())
    }
 
-   val debug_tsc = UInt(INPUT, xLen)     // time stamp counter
+   val debug_tsc = Input(UInt(xLen.W))     // time stamp counter
 }
 
 
@@ -1321,11 +1321,11 @@ class ForwardingAgeLogic(num_entries: Int)(implicit p: Parameters) extends BoomM
 {
    val io = new Bundle
    {
-      val addr_matches    = UInt(INPUT, num_entries) // bit vector of addresses that match between the load and the SAQ
-      val youngest_st_idx = UInt(INPUT, MEM_ADDR_SZ) // needed to get "age"
+      val addr_matches    = Input(UInt(num_entries.W)) // bit vector of addresses that match between the load and the SAQ
+      val youngest_st_idx = Input(UInt(MEM_ADDR_SZ.W)) // needed to get "age"
 
-      val forwarding_val  = Bool(OUTPUT)
-      val forwarding_idx  = UInt(OUTPUT, MEM_ADDR_SZ)
+      val forwarding_val  = Output(Bool())
+      val forwarding_idx  = Output(UInt(MEM_ADDR_SZ.W))
    }
 
    // generating mask that zeroes out anything younger than tail

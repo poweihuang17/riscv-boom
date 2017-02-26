@@ -32,7 +32,7 @@ class RegisterReadIO(
    val iss_uops   = Vec(issue_width, new MicroOp()).asInput
 
    // interface with register file's read ports
-   val rf_read_ports = Vec(num_total_read_ports, new RegisterFileReadPortIO(PREG_SZ, register_width)).flip
+   val rf_read_ports = Flipped(Vec(num_total_read_ports, new RegisterFileReadPortIO(PREG_SZ, register_width)))
 //   val rf_read_ports = Vec(num_total_read_ports, new RegisterFileReadPortIO(PREG_SZ, register_width).flip)
 
    val bypass = new BypassData(num_total_bypass_ports, register_width).asInput
@@ -40,7 +40,7 @@ class RegisterReadIO(
    // send micro-ops to the execution pipelines
    val exe_reqs = Vec(issue_width, (new DecoupledIO(new FuncUnitReq(register_width))))
 
-   val kill   = Bool(INPUT)
+   val kill   = Input(Bool())
    val brinfo = new BrResolutionInfo().asInput
 
    override def cloneType =

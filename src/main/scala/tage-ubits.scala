@@ -30,21 +30,21 @@ abstract class TageUbitMemory(
    val io = new Bundle
    {
       // send read addr on cycle 0, get data out on cycle 2.
-      val s0_read_idx = UInt(INPUT, width = index_sz)
-      val s2_is_useful = Bool(OUTPUT)
+      val s0_read_idx = Input(UInt(index_sz.W))
+      val s2_is_useful = Output(Bool())
 
 
-      val allocate_valid  = Bool(INPUT)
-      val allocate_idx = UInt(INPUT, width = index_sz)
+      val allocate_valid  = Input(Bool())
+      val allocate_idx = Input(UInt(index_sz.W))
       def allocate(idx: UInt) =
       {
          this.allocate_valid := Bool(true)
          this.allocate_idx := idx
       }
 
-      val update_valid  = Bool(INPUT)
-      val update_idx = UInt(INPUT, width = index_sz)
-      val update_inc = Bool(INPUT)
+      val update_valid  = Input(Bool())
+      val update_idx = Input(UInt(index_sz.W))
+      val update_inc = Input(Bool())
       def update(idx: UInt, inc: Bool) =
       {
          this.update_valid  := Bool(true)
@@ -52,14 +52,14 @@ abstract class TageUbitMemory(
          this.update_inc := inc
       }
 
-      val degrade_valid = Bool(INPUT)
+      val degrade_valid = Input(Bool())
       def degrade(dummy: Int=0) =
       {
          this.degrade_valid := Bool(true)
       }
 
       // Degrading may take many cycles. Tell the tage-table if we are degrading.
-      val is_degrading = Bool(OUTPUT)
+      val is_degrading = Output(Bool())
       def areDegrading(dummy: Int=0) =
       {
          this.is_degrading

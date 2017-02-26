@@ -52,7 +52,7 @@ class Prefetcher(implicit p: Parameters) extends BoomModule()(p)
 {
    val io = new Bundle
    {
-      val core_requests = (new ValidIO(new CoreRequest)).flip
+      val core_requests = Flipped(new ValidIO(new CoreRequest))
       val cache = new CacheIO
    }
 

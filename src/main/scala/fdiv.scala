@@ -23,7 +23,7 @@ import rocket.FPConstants._
 class UOPCodeFDivDecoder extends Module
 {
   val io = new Bundle {
-    val uopc = Bits(INPUT, UOPC_SZ)
+    val uopc = Input(Bits(UOPC_SZ.W))
     val sigs = new rocket.FPUCtrlSigs().asOutput
   }
 

@@ -33,18 +33,18 @@ class TageTableIo(
    private val index_sz = log2Up(num_entries)
 
    // instruction fetch - request prediction
-   val if_req_pc = UInt(INPUT, width = xLen)
+   val if_req_pc = Input(UInt(xLen.W))
 
    // bp2 - send prediction to bpd pipeline
    val bp2_resp = new DecoupledIO(new TageTableResp(fetch_width, history_length, log2Up(num_entries), tag_sz))
 
    // bp2 - update histories speculatively
-   val bp2_update_history = (new ValidIO(new GHistUpdate)).flip
+   val bp2_update_history = Flipped(new ValidIO(new GHistUpdate))
    // TODO: this is painfully special-cased -- move this into an update_csr bundle?
-   val bp2_update_csr_evict_bit = Bool(INPUT)
+   val bp2_update_csr_evict_bit = Input(Bool())
 
    // commit - update predictor tables (allocate entry)
-   val allocate = (new ValidIO(new TageAllocateEntryInfo(fetch_width, index_sz, tag_sz, history_length))).flip
+   val allocate = Flipped(new ValidIO(new TageAllocateEntryInfo(fetch_width, index_sz, tag_sz, history_length)))
    def AllocateNewEntry(idx: UInt, tag: UInt, executed: UInt, taken: UInt, debug_pc: UInt, debug_hist_ptr: UInt) =
    {
       this.allocate.valid := Bool(true)
@@ -57,7 +57,7 @@ class TageTableIo(
    }
 
    // commit - update predictor tables (update counters)
-   val update_counters = (new ValidIO(new TageUpdateCountersInfo(fetch_width, index_sz))).flip
+   val update_counters = Flipped(new ValidIO(new TageUpdateCountersInfo(fetch_width, index_sz)))
    def UpdateCounters(idx: UInt, executed: UInt, taken: UInt, mispredicted: Bool) =
    {
       this.update_counters.valid := Bool(true)
@@ -68,7 +68,7 @@ class TageTableIo(
    }
 
    // commit - update predictor tables (update u-bits)
-   val update_usefulness = (new ValidIO(new TageUpdateUsefulInfo(index_sz))).flip
+   val update_usefulness = Flipped(new ValidIO(new TageUpdateUsefulInfo(index_sz)))
    def UpdateUsefulness(idx: UInt, inc: Bool) =
    {
       this.update_usefulness.valid := Bool(true)
@@ -76,8 +76,8 @@ class TageTableIo(
       this.update_usefulness.bits.inc := inc
    }
 
-   val usefulness_req_idx = UInt(INPUT, index_sz)
-   val usefulness_resp = UInt(OUTPUT, 2) // TODO u-bit_sz
+   val usefulness_req_idx = Input(UInt(index_sz.W))
+   val usefulness_resp = Output(UInt(2.W)) // TODO u-bit_sz
    def GetUsefulness(idx: UInt, idx_sz: Int) =
    {
 //      this.usefulness_req_idx := idx(this_index_sz-1,0) // TODO CODEREVIEW
@@ -85,22 +85,22 @@ class TageTableIo(
       this.usefulness_resp
    }
 
-   val degrade_usefulness_valid = Bool(INPUT)
+   val degrade_usefulness_valid = Input(Bool())
    def DegradeUsefulness(dummy: Int=0) =
    {
       this.degrade_usefulness_valid := Bool(true)
    }
 
    // BP2 - speculatively update the spec copy of the CSRs (branch history registers)
-//   val spec_csr_update = Valid(new CircularShiftRegisterUpdate).flip
+//   val spec_csr_update = Flipped(Valid(new CircularShiftRegisterUpdate))
    // Commit - update the commit copy of the CSRs (branch history registers)
-   val commit_csr_update = Valid(new CircularShiftRegisterUpdate).flip
-   val debug_ghistory_commit_copy= UInt(INPUT, history_length) // TODO REMOVE for debug
+   val commit_csr_update = Flipped(Valid(new CircularShiftRegisterUpdate))
+   val debug_ghistory_commit_copy= Input(UInt(history_length.W)) // TODO REMOVE for debug
 
    // branch resolution comes from the branch-unit, during the Execute stage.
-   val br_resolution = Valid(new BpdUpdate).flip
+   val br_resolution = Flipped(Valid(new BpdUpdate))
    // reset CSRs to commit copies during pipeline flush
-   val flush = Bool(INPUT)
+   val flush = Input(Bool())
 
    def InitializeIo(dummy: Int=0) =
    {

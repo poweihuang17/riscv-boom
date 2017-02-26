@@ -34,15 +34,15 @@ class TageTagMemory(
    val io = new Bundle
    {
       // the reader is not ready; stall the read pipeline.
-      val stall = Bool(INPUT)
+      val stall = Input(Bool())
 
       // send read addr on cycle 0, get data out on cycle 2.
-      val s0_r_idx = UInt(INPUT, width = index_sz)
-      val s2_r_out = UInt(OUTPUT, width = memwidth)
+      val s0_r_idx = Input(UInt(index_sz.W))
+      val s2_r_out = Output(UInt(memwidth.W))
 
-      val w_en = Bool(INPUT)
-      val w_idx = UInt(INPUT, width = index_sz)
-      val w_data = UInt(INPUT, width = memwidth)
+      val w_en = Input(Bool())
+      val w_idx = Input(UInt(index_sz.W))
+      val w_data = Input(UInt(memwidth.W))
       def write(idx: UInt, data: UInt) =
       {
          this.w_en := Bool(true)

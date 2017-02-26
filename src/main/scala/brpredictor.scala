@@ -120,22 +120,22 @@ abstract class BrPredictor(fetch_width: Int, val history_length: Int)(implicit p
    val io = new BoomBundle()(p)
    {
       // the PC to predict
-      val req_pc = UInt(INPUT, width = vaddrBits)
+      val req_pc = Input(UInt(vaddrBits.W))
       // our prediction. Assert "valid==true" if we want our prediction to be honored.
       // For a tagged predictor, valid==true means we had a tag hit and trust our prediction.
       // For an un-tagged predictor, valid==true should probably only be if a branch is predicted taken.
       // This has an effect on whether to override the BTB's prediction.
       val resp = Decoupled(new BpdResp)
       // speculatively update the global history (once we know we're predicting a branch)
-      val hist_update_spec = Valid(new GHistUpdate).flip
+      val hist_update_spec = Flipped(Valid(new GHistUpdate))
       // branch resolution comes from the branch-unit, during the Execute stage.
-      val br_resolution = Valid(new BpdUpdate).flip
+      val br_resolution = Flipped(Valid(new BpdUpdate))
       val brob = new BrobBackendIo(fetch_width)
       // Pipeline flush - reset history as appropriate.
       // Arrives same cycle as redirecting the front-end -- otherwise, the ghistory would be wrong if it came later!
-      val flush = Bool(INPUT)
+      val flush = Input(Bool())
       // privilege-level (allow predictor to change behavior in different privilege modes).
-      val status_prv = UInt(INPUT, width = rocket.PRV.SZ)
+      val status_prv = Input(UInt(rocket.PRV.SZ.W))
    }
 
    // the (speculative) global history wire (used for accessing the branch predictor state).
@@ -557,13 +557,13 @@ class RandomBrPredictor(
 
 class BrobBackendIo(fetch_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val allocate = Decoupled(new BrobEntry(fetch_width)).flip // Decode/Dispatch stage, allocate new entry
-   val allocate_brob_tail = UInt(OUTPUT, width = BROB_ADDR_SZ) // tell Decode which entry gets allocated
+   val allocate = Flipped(Decoupled(new BrobEntry(fetch_width))) // Decode/Dispatch stage, allocate new entry
+   val allocate_brob_tail = Output(UInt(BROB_ADDR_SZ.W)) // tell Decode which entry gets allocated
 
-   val deallocate = Valid(new BrobDeallocateIdx).flip // Commmit stage, from the ROB
+   val deallocate = Flipped(Valid(new BrobDeallocateIdx)) // Commmit stage, from the ROB
 
-   val bpd_update = Valid(new BpdUpdate()).flip // provide br resolution information
-   val flush = Bool(INPUT) // wipe the ROB
+   val bpd_update = Flipped(Valid(new BpdUpdate())) // provide br resolution information
+   val flush = Input(Bool()) // wipe the ROB
 }
 
 class BrobDeallocateIdx(implicit p: Parameters) extends BoomBundle()(p)

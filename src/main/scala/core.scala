@@ -58,12 +58,12 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    val io = new BoomBundle()(p)
    {
       val interrupts = new rocket.TileInterrupts().asInput
-      val hartid     = UInt(INPUT, xLen)
+      val hartid     = Input(UInt(xLen.W))
       val imem       = new rocket.FrontendIO
       val dmem       = new DCMemPortIO
-      val ptw_dat    = new rocket.DatapathPTWIO().flip
+      val ptw_dat    = Flipped(new rocket.DatapathPTWIO())
       val ptw_tlb    = new rocket.TLBPTWIO()
-      val rocc       = new rocket.RoCCInterface().flip
+      val rocc       = Flipped(new rocket.RoCCInterface())
       val counters   = new CacheCounters().asInput
    }
 

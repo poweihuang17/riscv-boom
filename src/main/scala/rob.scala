@@ -43,12 +43,12 @@ class RobIo(machine_width: Int
    // (Write Instruction to ROB from Dispatch Stage)
    val dis_valids       = Vec(machine_width, Bool()).asInput
    val dis_uops         = Vec(machine_width, new MicroOp()).asInput
-   val dis_has_br_or_jalr_in_packet = Bool(INPUT)
-   val dis_partial_stall= Bool(INPUT) // we're dispatching only a partial packet, and stalling on the rest of it (don't
+   val dis_has_br_or_jalr_in_packet = Input(Bool())
+   val dis_partial_stall= Input(Bool()) // we're dispatching only a partial packet, and stalling on the rest of it (don't
                                       // advance the tail ptr)
-   val dis_new_packet   = Bool(INPUT) // we're dispatching the first (and perhaps only) part of a dispatch packet.
+   val dis_new_packet   = Input(Bool()) // we're dispatching the first (and perhaps only) part of a dispatch packet.
 
-   val curr_rob_tail    = UInt(OUTPUT, ROB_ADDR_SZ)
+   val curr_rob_tail    = Output(UInt(ROB_ADDR_SZ.W))
 
    // Handle Branch Misspeculations
    val brinfo = new BrResolutionInfo().asInput
@@ -59,41 +59,41 @@ class RobIo(machine_width: Int
    // Write-back Stage
    // (Update of ROB)
    // Instruction is no longer busy and can be committed
-   val wb_resps = Vec(num_wakeup_ports, Valid(new ExeUnitResp(65))).flip
+   val wb_resps = Flipped(Vec(num_wakeup_ports, Valid(new ExeUnitResp(65))))
 
-   val lsu_clr_bsy_valid = Bool(INPUT)
-   val lsu_clr_bsy_rob_idx = UInt(INPUT, ROB_ADDR_SZ)
+   val lsu_clr_bsy_valid = Input(Bool())
+   val lsu_clr_bsy_rob_idx = Input(UInt(ROB_ADDR_SZ.W))
 
    // Track side-effects for debug purposes.
    // Also need to know when loads write back, whereas we don't need loads to unbusy.
    val debug_wb_valids  = Vec(num_wakeup_ports, Bool()).asInput
    val debug_wb_wdata   = Vec(num_wakeup_ports, Bits(width=xLen)).asInput
 
-   val fflags = Vec(num_fpu_ports, new ValidIO(new FFlagsResp())).flip
-   val lxcpt = new ValidIO(new Exception()).flip // LSU
-   val bxcpt = new ValidIO(new Exception()).flip // BRU
-   val cxcpt = new ValidIO(new Exception()).flip // CSR
+   val fflags = Flipped(Vec(num_fpu_ports, new ValidIO(new FFlagsResp())))
+   val lxcpt = Flipped(new ValidIO(new Exception())) // LSU
+   val bxcpt = Flipped(new ValidIO(new Exception())) // BRU
+   val cxcpt = Flipped(new ValidIO(new Exception())) // CSR
 
    // Commit stage (free resources; also used for rollback).
    val commit = new CommitSignals(machine_width).asOutput
 
    // tell the LSU that the head of the ROB is a load
    // (some loads can only execute once they are at the head of the ROB).
-   val com_load_is_at_rob_head = Bool(OUTPUT)
+   val com_load_is_at_rob_head = Output(Bool())
 
    // Communicate exceptions to the CSRFile
    val com_xcpt = Valid(new CommitExceptionSignals(machine_width))
-   val csr_eret = Bool(INPUT)
-   val csr_evec = UInt(INPUT, vaddrBitsExtended)
+   val csr_eret = Input(Bool())
+   val csr_evec = Input(UInt(vaddrBitsExtended.W))
 
    // Flush signals (including exceptions, pipeline replays, and memory ordering failures).
    val flush = Valid(new FlushSignals)
 
-   val clear_brob       = Bool(OUTPUT)
+   val clear_brob       = Output(Bool())
 
    // Stall Decode as appropriate
-   val empty            = Bool(OUTPUT)
-   val ready            = Bool(OUTPUT) // busy unrolling...
+   val empty            = Output(Bool())
+   val ready            = Output(Bool()) // busy unrolling...
 
    // communicate with the branch-reorder buffer
    val brob_deallocate  = Valid(new BrobDeallocateIdx)
@@ -101,7 +101,7 @@ class RobIo(machine_width: Int
    // pass out debug information to high-level printf
    val debug = new DebugRobSignals().asOutput
 
-   val debug_tsc = UInt(INPUT, xLen)
+   val debug_tsc = Input(UInt(xLen.W))
 }
 
 
@@ -109,7 +109,7 @@ class CommitSignals(machine_width: Int)(implicit p: Parameters) extends BoomBund
 {
    val valids     = Vec(machine_width, Bool())
    val uops       = Vec(machine_width, new MicroOp())
-   val fflags     = Valid(UInt(width = 5))
+   val fflags     = Valid(UInt(5.W))
 
    // Perform rollback of rename state (in conjuction with commit.uops).
    val rbk_valids = Vec(machine_width, Bool())
@@ -124,9 +124,9 @@ class CommitSignals(machine_width: Int)(implicit p: Parameters) extends BoomBund
 
 class CommitExceptionSignals(machine_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val pc         = UInt(width = xLen)
-   val cause      = UInt(width = xLen)
-   val badvaddr   = UInt(width = xLen)
+   val pc         = UInt(xLen.W)
+   val cause      = UInt(xLen.W)
+   val badvaddr   = UInt(xLen.W)
    override def cloneType: this.type = new CommitExceptionSignals(machine_width)(p).asInstanceOf[this.type]
 }
 
@@ -138,15 +138,15 @@ class FlushSignals(implicit p: Parameters) extends BoomBundle()(p)
    // but because we're doing superscalar commit, the actual flush pc may not
    // be the rob_head pc+4, but rather the last committed instruction in the
    // commit group.
-   val pc = UInt(width = xLen)
+   val pc = UInt(xLen.W)
 }
 
 
 class Exception(implicit p: Parameters) extends BoomBundle()(p)
 {
    val uop = new MicroOp()
-   val cause = Bits(width=log2Up(rocket.Causes.all.max))
-   val badvaddr = UInt(width=coreMaxAddrBits)
+   val cause = Bits(log2Up(rocket.Causes.all.max).W)
+   val badvaddr = UInt(coreMaxAddrBits.W)
 }
 
 
@@ -154,22 +154,22 @@ class Exception(implicit p: Parameters) extends BoomBundle()(p)
 // and the BROB index too.
 class RobPCRequest(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val rob_idx  = UInt(INPUT, ROB_ADDR_SZ)
-   val curr_pc  = UInt(OUTPUT, vaddrBits+1)
-   val curr_brob_idx = UInt(OUTPUT, BROB_ADDR_SZ)
+   val rob_idx  = Input(UInt(ROB_ADDR_SZ.W))
+   val curr_pc  = Output(UInt((vaddrBits+1).W))
+   val curr_brob_idx = Output(UInt(BROB_ADDR_SZ.W))
    // the next_pc may not be valid (stalled or still being fetched)
-   val next_val = Bool(OUTPUT)
-   val next_pc  = UInt(OUTPUT, vaddrBits+1)
+   val next_val = Output(Bool())
+   val next_pc  = Output(UInt((vaddrBits+1).W))
 }
 
 
 class DebugRobSignals(implicit p: Parameters) extends BoomBundle()(p)
 {
    val state = UInt()
-   val rob_head = UInt(width = ROB_ADDR_SZ)
+   val rob_head = UInt(ROB_ADDR_SZ.W)
    val xcpt_val = Bool()
    val xcpt_uop = new MicroOp()
-   val xcpt_badvaddr = UInt(width = xLen)
+   val xcpt_badvaddr = UInt(xLen.W)
 }
 
 

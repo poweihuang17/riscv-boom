@@ -23,27 +23,27 @@ import cde.Parameters
 
 class RenameMapTableElementIo(pl_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val element            = UInt(OUTPUT, PREG_SZ)
+   val element            = Output(UInt(PREG_SZ.W))
 
    val wens               = Vec(pl_width, Bool()).asInput
-   val ren_pdsts          = Vec(pl_width, UInt(width=PREG_SZ)).asInput
+   val ren_pdsts          = Vec(pl_width, UInt(PREG_SZ.W)).asInput
 
    val ren_br_vals        = Vec(pl_width, Bool()).asInput
-   val ren_br_tags        = Vec(pl_width, UInt(width=BR_TAG_SZ)).asInput
+   val ren_br_tags        = Vec(pl_width, UInt(BR_TAG_SZ.W)).asInput
 
-   val br_mispredict      = Bool(INPUT)
-   val br_mispredict_tag  = UInt(INPUT, BR_TAG_SZ)
+   val br_mispredict      = Input(Bool())
+   val br_mispredict_tag  = Input(UInt(BR_TAG_SZ.W))
 
    // rollback (on exceptions)
    // TODO REMOVE THIS ROLLBACK PORT, since wens is mutually exclusive with rollback_wens
-   val rollback_wen        = Bool(INPUT)
-   val rollback_stale_pdst = UInt(INPUT, PREG_SZ)
+   val rollback_wen        = Input(Bool())
+   val rollback_stale_pdst = Input(UInt(PREG_SZ.W))
 
    // TODO scr option
-   val flush_pipeline      = Bool(INPUT)
-   val commit_wen          = Bool(INPUT)
-   val commit_pdst         = UInt(INPUT, PREG_SZ)
-   val committed_element   = UInt(OUTPUT, PREG_SZ)
+   val flush_pipeline      = Input(Bool())
+   val commit_wen          = Input(Bool())
+   val commit_pdst         = Input(UInt(PREG_SZ.W))
+   val committed_element   = Output(UInt(PREG_SZ.W))
 
    override def cloneType: this.type = new RenameMapTableElementIo(pl_width).asInstanceOf[this.type]
 }
@@ -136,29 +136,29 @@ class FreeListIo(num_phys_registers: Int, pl_width: Int)(implicit p: Parameters)
 
    // committed and newly freed register
    val enq_vals      = Vec(pl_width, Bool()).asInput
-   val enq_pregs     = Vec(pl_width, UInt(width=log2Up(num_phys_registers))).asInput
+   val enq_pregs     = Vec(pl_width, UInt(log2Up(num_phys_registers).W)).asInput
 
    // do we have space to service incoming requests? (per inst granularity)
    val can_allocate  = Vec(pl_width, Bool()).asOutput
 
    // handle branches (save copy of freelist on branch, merge on mispredict)
    val ren_br_vals   = Vec(pl_width, Bool()).asInput
-   val ren_br_tags   = Vec(pl_width, UInt(width=BR_TAG_SZ)).asInput
+   val ren_br_tags   = Vec(pl_width, UInt(BR_TAG_SZ.W)).asInput
 
    // handle mispredicts
-   val br_mispredict_val = Bool(INPUT)
-   val br_mispredict_tag = UInt(INPUT, BR_TAG_SZ)
+   val br_mispredict_val = Input(Bool())
+   val br_mispredict_tag = Input(UInt(BR_TAG_SZ.W))
 
    // rollback (on exceptions)
    val rollback_wens  = Vec(pl_width, Bool()).asInput
-   val rollback_pdsts = Vec(pl_width, UInt(width=log2Up(num_phys_registers))).asInput
+   val rollback_pdsts = Vec(pl_width, UInt(log2Up(num_phys_registers).W)).asInput
 
    // or...
    // TODO there are TWO free-list IOs now, based on constants. What is the best way to handle these two designs?
    // perhaps freelist.scala, and instantiate which-ever one I want?
    // TODO naming is inconsistent
    // TODO combine with rollback, whatever?
-   val flush_pipeline = Bool(INPUT)
+   val flush_pipeline = Input(Bool())
    val com_wens       = Vec(pl_width, Bool()).asInput
    val com_uops       = Vec(pl_width, new MicroOp()).asInput
 
@@ -167,8 +167,8 @@ class FreeListIo(num_phys_registers: Int, pl_width: Int)(implicit p: Parameters)
 
 class DebugFreeListIO(num_phys_registers: Int) extends Bundle
 {
-   val freelist = Bits(width=num_phys_registers)
-   val isprlist = Bits(width=num_phys_registers)
+   val freelist = Bits(num_phys_registers.W)
+   val isprlist = Bits(num_phys_registers.W)
    override def cloneType: this.type = new DebugFreeListIO(num_phys_registers).asInstanceOf[this.type]
 }
 
@@ -366,10 +366,10 @@ class BusyTableIo(pipeline_width:Int, num_read_ports:Int, num_wb_ports:Int)(impl
    def prs_busy(i:Int, w:Int):Bool = p_rs_busy(w+i*pipeline_width)
 
    // marking new registers as busy
-   val allocated_pdst = Vec(pipeline_width, new ValidIO(UInt(width=PREG_SZ))).flip
+   val allocated_pdst = Vec(pipeline_width, new ValidIO(UInt(width=PREG_SZ))).asInput
 
    // marking registers being written back as unbusy
-   val unbusy_pdst    = Vec(num_wb_ports, new ValidIO(UInt(width = PREG_SZ))).flip
+   val unbusy_pdst    = Vec(num_wb_ports, new ValidIO(UInt(width = PREG_SZ))).asInput
 
    val debug = new Bundle { val bsy_table= Bits(width=PHYS_REG_COUNT).asOutput }
 }
@@ -426,7 +426,7 @@ class RenameStageIO(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) ex
    val ren_mask  = Vec(pl_width, Bool().asOutput) // mask of valid instructions
    val inst_can_proceed = Vec(pl_width, Bool()).asOutput
 
-   val kill      = Bool(INPUT)
+   val kill      = Input(Bool())
 
    val dec_mask  = Vec(pl_width, Bool()).asInput
 
@@ -437,7 +437,7 @@ class RenameStageIO(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) ex
 
    // branch resolution (execute)
    val brinfo    = new BrResolutionInfo().asInput
-   val get_pred  = new GetPredictionInfo().flip
+   val get_pred  = Flipped(new GetPredictionInfo())
 
    val dis_inst_can_proceed = Vec(DISPATCH_WIDTH, Bool()).asInput
 
@@ -450,7 +450,7 @@ class RenameStageIO(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) ex
    val com_uops   = Vec(pl_width, new MicroOp()).asInput
    val com_rbk_valids = Vec(pl_width, Bool()).asInput
 
-   val flush_pipeline = Bool(INPUT) // TODO only used for SCR (single-cycle reset)
+   val flush_pipeline = Input(Bool()) // TODO only used for SCR (single-cycle reset)
 
    val debug = new DebugRenameStageIO().asOutput
 }

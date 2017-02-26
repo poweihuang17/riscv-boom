@@ -20,16 +20,16 @@ import cde.Parameters
 
 class RegisterFileReadPortIO(addr_width: Int, data_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val addr = UInt(INPUT, addr_width)
-   val data = Bits(OUTPUT, data_width)
+   val addr = Input(UInt(addr_width.W))
+   val data = Output(Bits(data_width.W))
    override def cloneType = new RegisterFileReadPortIO(addr_width, data_width)(p).asInstanceOf[this.type]
 }
 
 class RegisterFileWritePortIO(addr_width: Int, data_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val wen  = Bool(INPUT)
-   val addr = UInt(INPUT, addr_width)
-   val data = Bits(INPUT, data_width)
+   val wen  = Input(Bool())
+   val addr = Input(UInt(addr_width.W))
+   val data = Input(Bits(data_width.W))
    override def cloneType = new RegisterFileWritePortIO(addr_width, data_width)(p).asInstanceOf[this.type]
 }
 

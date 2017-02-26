@@ -18,18 +18,18 @@ import cde.Parameters
 
 class IssueSlotIO(num_wakeup_ports: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val valid          = Bool(OUTPUT)
-   val will_be_valid  = Bool(OUTPUT) // TODO code review, do we need this signal so explicitely?
-   val request        = Bool(OUTPUT)
-   val request_hp     = Bool(OUTPUT)
-   val grant          = Bool(INPUT)
+   val valid          = Output(Bool())
+   val will_be_valid  = Output(Bool()) // TODO code review, do we need this signal so explicitely?
+   val request        = Output(Bool())
+   val request_hp     = Output(Bool())
+   val grant          = Input(Bool())
 
    val brinfo         = new BrResolutionInfo().asInput
-   val kill           = Bool(INPUT) // pipeline flush
-   val clear          = Bool(INPUT) // entry being moved elsewhere (not mutually exclusive with grant)
+   val kill           = Input(Bool()) // pipeline flush
+   val clear          = Input(Bool()) // entry being moved elsewhere (not mutually exclusive with grant)
 
-   val wakeup_dsts    = Vec(num_wakeup_ports, Valid(UInt(width = PREG_SZ))).flip
-   val in_uop         = Valid(new MicroOp()).flip // if valid, this WILL overwrite an entry!
+   val wakeup_dsts    = Vec(num_wakeup_ports, Valid(UInt(PREG_SZ.W))).asInput
+   val in_uop         = Valid(new MicroOp()).asInput // if valid, this WILL overwrite an entry!
    val updated_uop    = new MicroOp().asOutput // the updated slot uop; will be shifted upwards in a collasping queue.
    val uop            = new MicroOp().asOutput // the current Slot's uop. Sent down the pipeline when issued.
 

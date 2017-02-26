@@ -17,9 +17,9 @@ import _root_.util.Str
 
 class FetchBundle(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val pc          = UInt(width = vaddrBits+1)
-   val insts       = Vec(FETCH_WIDTH, Bits(width = 32))
-   val mask        = Bits(width = FETCH_WIDTH) // mark which words are valid instructions
+   val pc          = UInt((vaddrBits+1).W)
+   val insts       = Vec(FETCH_WIDTH, Bits(32.W))
+   val mask        = Bits(FETCH_WIDTH.W) // mark which words are valid instructions
    val xcpt_if     = Bool()
    val replay_if   = Bool()
 
@@ -39,24 +39,24 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
       val imem              = new rocket.FrontendIO
       val br_unit           = new BranchUnitResp().asInput
 
-      val tsc_reg           = UInt(INPUT, xLen)
+      val tsc_reg           = Input(UInt(xLen.W))
 
-      val bp2_take_pc       = Bool(INPUT)
-      val bp2_is_taken      = Bool(INPUT)
-      val bp2_br_seen       = Bool(INPUT)
-      val bp2_is_jump       = Bool(INPUT)
-      val bp2_is_cfi        = Bool(INPUT)
+      val bp2_take_pc       = Input(Bool())
+      val bp2_is_taken      = Input(Bool())
+      val bp2_br_seen       = Input(Bool())
+      val bp2_is_jump       = Input(Bool())
+      val bp2_is_cfi        = Input(Bool())
       val bp2_pred_resp     = new BranchPredictionResp().asInput
       val bp2_predictions   = Vec(fetch_width, new BranchPrediction()).asInput
-      val bp2_pc_of_br_inst = UInt(INPUT, vaddrBits+1)
-      val bp2_pred_target   = UInt(INPUT, vaddrBits+1)
+      val bp2_pc_of_br_inst = Input(UInt((vaddrBits+1).W))
+      val bp2_pred_target   = Input(UInt((vaddrBits+1).W))
 
-      val clear_fetchbuffer = Bool(INPUT)
+      val clear_fetchbuffer = Input(Bool())
 
-      val flush_take_pc     = Bool(INPUT)
-      val flush_pc          = UInt(INPUT, vaddrBits+1)
+      val flush_take_pc     = Input(Bool())
+      val flush_pc          = Input(UInt((vaddrBits+1).W))
 
-      val stalled           = Bool(OUTPUT)
+      val stalled           = Output(Bool())
       val resp              = new DecoupledIO(new FetchBundle)
    }
 

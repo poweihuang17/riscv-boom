@@ -47,26 +47,26 @@ class ExecutionUnitIO(num_rf_read_ports: Int
                      )(implicit p: Parameters) extends BoomBundle()(p)
 {
    // describe which functional units we support (used by the issue window)
-   val fu_types = Bits(OUTPUT, FUC_SZ)
+   val fu_types = Output(Bits(FUC_SZ.W))
 
-   val req     = (new DecoupledIO(new FuncUnitReq(data_width))).flip
+   val req     = Flipped(new DecoupledIO(new FuncUnitReq(data_width)))
    val resp    = Vec(num_rf_write_ports, new DecoupledIO(new ExeUnitResp(data_width)))
    val bypass  = new BypassData(num_bypass_ports, data_width).asOutput
    val brinfo  = new BrResolutionInfo().asInput
 
    // only used by the branch unit
    val br_unit = new BranchUnitResp().asOutput
-   val get_rob_pc = new RobPCRequest().flip
+   val get_rob_pc = Flipped(new RobPCRequest())
    val get_pred = new GetPredictionInfo
    val status = new rocket.MStatus().asInput
 
    // only used by the fpu unit
-   val fcsr_rm = Bits(INPUT, rocket.FPConstants.RM_SZ)
+   val fcsr_rm = Input(Bits(rocket.FPConstants.RM_SZ.W))
 
    // only used by the mem unit
    val lsu_io = new LoadStoreUnitIO(DECODE_WIDTH)
    val dmem   = new DCMemPortIO()
-   val com_exception = Bool(INPUT)
+   val com_exception = Input(Bool())
 }
 
 abstract class ExecutionUnit(val num_rf_read_ports: Int

@@ -25,7 +25,7 @@ import _root_.util.uintToBitPat
 class UOPCodeFPUDecoder extends Module
 {
   val io = new Bundle {
-    val uopc = Bits(INPUT, UOPC_SZ)
+    val uopc = Input(Bits(UOPC_SZ.W))
     val sigs = new FPUCtrlSigs().asOutput
   }
 
@@ -131,7 +131,7 @@ class FPU(implicit p: Parameters) extends BoomModule()(p)
 {
    val io = new Bundle
    {
-      val req = new ValidIO(new FpuReq).flip
+      val req = Flipped(new ValidIO(new FpuReq))
       val resp = new ValidIO(new ExeUnitResp(65))
    }
 
