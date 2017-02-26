@@ -13,7 +13,7 @@ import chisel3._
 import chisel3.util._
 import cde.Parameters
 
-import util.Str
+import _root_.util.Str
 
 class FetchBundle(implicit p: Parameters) extends BoomBundle()(p)
 {

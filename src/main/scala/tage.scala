@@ -48,7 +48,7 @@ import chisel3._
 import chisel3.util._
 import cde.{Parameters, Field}
 
-import util.Str
+import _root_.util.Str
 
 case object TageKey extends Field[TageParameters]
 
@@ -314,7 +314,7 @@ class TageBrPredictor(
    //-------------------------------------------------------------
    // Track ubit degrade flush timer.
 
-   val degrade_counter = util.WideCounter(20, commit.valid && commit.bits.ctrl.executed.reduce(_|_))
+   val degrade_counter = _root_.util.WideCounter(20, commit.valid && commit.bits.ctrl.executed.reduce(_|_))
    val do_degrade = degrade_counter === UInt(1<<19)
    when (do_degrade)
    {

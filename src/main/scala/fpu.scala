@@ -16,7 +16,7 @@ import rocket.FPConstants._
 import rocket.FPUCtrlSigs
 import rocket.FPUKey
 
-import util.uintToBitPat
+import _root_.util.uintToBitPat
 
 
 // TODO get rid of this decoder and move into the Decode stage? Or the RRd stage?

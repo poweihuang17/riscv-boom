@@ -23,7 +23,7 @@ import chisel3.util._
 import cde.Parameters
 
 import rocket.ALU._
-import util._
+import _root_.util._
 import uncore.constants.MemoryOpConstants._
 
 

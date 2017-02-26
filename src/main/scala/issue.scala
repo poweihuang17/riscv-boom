@@ -14,7 +14,7 @@ import chisel3.util._
 import cde.Parameters
 
 import FUConstants._
-import util.Str
+import _root_.util.Str
 
 
 //-------------------------------------------------------------

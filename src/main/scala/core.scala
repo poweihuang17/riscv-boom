@@ -32,13 +32,13 @@ import chisel3.util._
 import cde.Parameters
 
 import rocket.Instructions._
-import util.Str
+import _root_.util.Str
 
 
 abstract class BoomModule(implicit val p: Parameters) extends Module
   with HasBoomCoreParameters
 
-class BoomBundle(implicit val p: Parameters) extends util.ParameterizedBundle()(p)
+class BoomBundle(implicit val p: Parameters) extends _root_.util.ParameterizedBundle()(p)
   with HasBoomCoreParameters
 
 
@@ -839,7 +839,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    //-------------------------------------------------------------
 
    // detect pipeline freezes and throw error
-   val idle_cycles = util.WideCounter(32)
+   val idle_cycles = _root_.util.WideCounter(32)
    when (rob.io.commit.valids.toBits.orR || reset.toBool) { idle_cycles := UInt(0) }
    assert (!(idle_cycles.value(13)), "Pipeline has hung.")
 

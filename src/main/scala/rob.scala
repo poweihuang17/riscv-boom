@@ -31,7 +31,7 @@ import chisel3._
 import chisel3.util._
 import scala.math.ceil
 import cde.Parameters
-import util.Str
+import _root_.util.Str
 
 class RobIo(machine_width: Int
             , issue_width: Int

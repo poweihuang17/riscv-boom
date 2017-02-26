@@ -37,7 +37,7 @@ import chisel3._
 import chisel3.util._
 import cde.{Parameters, Field}
 
-import util.Str
+import _root_.util.Str
 
 
 // This is the response packet from the branch predictor. The predictor is
@@ -529,7 +529,7 @@ class RandomBrPredictor(
    def rand(width: Int) = {
         lfsr = lfsr(lfsr.getWidth-1,1)
         val mod = (1 << width) - 1
-          util.Random(mod, lfsr)
+          _root_.util.Random(mod, lfsr)
    }
 
    io.resp.valid := rand_val

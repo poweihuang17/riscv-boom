@@ -15,7 +15,7 @@ import chisel3.util._
 import cde.Parameters
 
 import FUConstants._
-import util.Str
+import _root_.util.Str
 import scala.collection.mutable.ArrayBuffer
 
 class IssueUnitStatic(num_issue_slots: Int, issue_width: Int, num_wakeup_ports: Int)(implicit p: Parameters)

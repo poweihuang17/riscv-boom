@@ -50,7 +50,7 @@ import chisel3._
 import chisel3.util._
 import cde.Parameters
 
-import util.Str
+import _root_.util.Str
 import uncore.constants.MemoryOpConstants._
 
 class LoadStoreUnitIO(pl_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
