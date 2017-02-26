@@ -13,7 +13,8 @@
 
 package boom
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import cde.{Parameters, Field}
 
 case object GShareKey extends Field[GShareParameters]

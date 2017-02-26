@@ -14,7 +14,8 @@ package boom
 package constants
 {
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import cde.Parameters
 
 import util.Str

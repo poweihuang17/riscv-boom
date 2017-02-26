@@ -42,7 +42,8 @@
 
 package boom
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 
 class UpdateEntry(fetch_width: Int, index_sz: Int) extends Bundle
 {

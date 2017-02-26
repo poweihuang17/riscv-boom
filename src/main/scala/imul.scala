@@ -4,7 +4,8 @@
 //------------------------------------------------------------------------------
 
 package boom
-import Chisel._
+import chisel3._
+import chisel3.util._
 
 import rocket.ALU._
 // TODO can repurpose the FN_* ctrl signals,

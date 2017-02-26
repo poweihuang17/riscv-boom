@@ -20,7 +20,8 @@
 
 package boom
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 
 
 class TageTagMemory(

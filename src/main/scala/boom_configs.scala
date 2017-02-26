@@ -5,7 +5,8 @@
 
 package boom
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import uncore.tilelink._
 import uncore.coherence._
 import uncore.agents._

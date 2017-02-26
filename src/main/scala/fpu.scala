@@ -8,7 +8,8 @@ package boom
    // Note: fdiv, fsqrt unsupported.
    // Note: (this FPU currently only supports fixed latency ops)
 
-import Chisel._
+import chisel3._
+import chisel3.util._
 import cde.Parameters
 
 import rocket.FPConstants._
