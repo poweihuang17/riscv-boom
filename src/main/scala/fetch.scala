@@ -37,7 +37,7 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
    val io = IO(new BoomBundle()(p)
    {
       val imem              = new rocket.FrontendIO
-      val br_unit           = new BranchUnitResp().asInput
+      val br_unit           = Input(new BranchUnitResp())
 
       val tsc_reg           = Input(UInt(xLen.W))
 
@@ -46,8 +46,8 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
       val bp2_br_seen       = Input(Bool())
       val bp2_is_jump       = Input(Bool())
       val bp2_is_cfi        = Input(Bool())
-      val bp2_pred_resp     = new BranchPredictionResp().asInput
-      val bp2_predictions   = Vec(fetch_width, new BranchPrediction()).asInput
+      val bp2_pred_resp     = Input(new BranchPredictionResp())
+      val bp2_predictions   = Input(Vec(fetch_width, new BranchPrediction()))
       val bp2_pc_of_br_inst = Input(UInt((vaddrBits+1).W))
       val bp2_pred_target   = Input(UInt((vaddrBits+1).W))
 
@@ -164,7 +164,7 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
    // Update the BHT in the BP2 stage.
    // Also update the BHT in the Exe stage IF and only if the branch is a misprediction.
    // TODO move this into the bpd_pipeline
-   val bp2_bht_update = Wire(Valid(new rocket.BHTUpdate()).asOutput)
+   val bp2_bht_update = Wire(Valid(new rocket.BHTUpdate()))
    bp2_bht_update.valid           := io.imem.resp.valid && io.bp2_br_seen && !if_stalled && !br_unit.take_pc
    bp2_bht_update.bits.prediction := io.imem.resp.bits.btb
    bp2_bht_update.bits.pc         := io.imem.resp.bits.pc

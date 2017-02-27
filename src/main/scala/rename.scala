@@ -25,11 +25,11 @@ class RenameMapTableElementIo(pl_width: Int)(implicit p: Parameters) extends Boo
 {
    val element            = Output(UInt(PREG_SZ.W))
 
-   val wens               = Vec(pl_width, Bool()).asInput
-   val ren_pdsts          = Vec(pl_width, UInt(PREG_SZ.W)).asInput
+   val wens               = Input(Vec(pl_width, Bool()))
+   val ren_pdsts          = Input(Vec(pl_width, UInt(PREG_SZ.W)))
 
-   val ren_br_vals        = Vec(pl_width, Bool()).asInput
-   val ren_br_tags        = Vec(pl_width, UInt(BR_TAG_SZ.W)).asInput
+   val ren_br_vals        = Input(Vec(pl_width, Bool()))
+   val ren_br_tags        = Input(Vec(pl_width, UInt(BR_TAG_SZ.W)))
 
    val br_mispredict      = Input(Bool())
    val br_mispredict_tag  = Input(UInt(BR_TAG_SZ.W))
@@ -131,27 +131,27 @@ class RenameMapTableElement(pipeline_width: Int)(implicit p: Parameters) extends
 
 class FreeListIo(num_phys_registers: Int, pl_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val req_preg_vals = Vec(pl_width, Bool()).asInput
-   val req_pregs     = Vec(pl_width, UInt(log2Up(num_phys_registers).W)).asOutput
+   val req_preg_vals = Input(Vec(pl_width, Bool()))
+   val req_pregs     = Output(Vec(pl_width, UInt(log2Up(num_phys_registers).W)))
 
    // committed and newly freed register
-   val enq_vals      = Vec(pl_width, Bool()).asInput
-   val enq_pregs     = Vec(pl_width, UInt(log2Up(num_phys_registers).W)).asInput
+   val enq_vals      = Input(Vec(pl_width, Bool()))
+   val enq_pregs     = Input(Vec(pl_width, UInt(log2Up(num_phys_registers).W)))
 
    // do we have space to service incoming requests? (per inst granularity)
-   val can_allocate  = Vec(pl_width, Bool()).asOutput
+   val can_allocate  = Output(Vec(pl_width, Bool()))
 
    // handle branches (save copy of freelist on branch, merge on mispredict)
-   val ren_br_vals   = Vec(pl_width, Bool()).asInput
-   val ren_br_tags   = Vec(pl_width, UInt(BR_TAG_SZ.W)).asInput
+   val ren_br_vals   = Input(Vec(pl_width, Bool()))
+   val ren_br_tags   = Input(Vec(pl_width, UInt(BR_TAG_SZ.W)))
 
    // handle mispredicts
    val br_mispredict_val = Input(Bool())
    val br_mispredict_tag = Input(UInt(BR_TAG_SZ.W))
 
    // rollback (on exceptions)
-   val rollback_wens  = Vec(pl_width, Bool()).asInput
-   val rollback_pdsts = Vec(pl_width, UInt(log2Up(num_phys_registers).W)).asInput
+   val rollback_wens  = Input(Vec(pl_width, Bool()))
+   val rollback_pdsts = Input(Vec(pl_width, UInt(log2Up(num_phys_registers).W)))
 
    // or...
    // TODO there are TWO free-list IOs now, based on constants. What is the best way to handle these two designs?
@@ -159,10 +159,10 @@ class FreeListIo(num_phys_registers: Int, pl_width: Int)(implicit p: Parameters)
    // TODO naming is inconsistent
    // TODO combine with rollback, whatever?
    val flush_pipeline = Input(Bool())
-   val com_wens       = Vec(pl_width, Bool()).asInput
-   val com_uops       = Vec(pl_width, new MicroOp()).asInput
+   val com_wens       = Input(Vec(pl_width, Bool()))
+   val com_uops       = Input(Vec(pl_width, new MicroOp()))
 
-   val debug = new DebugFreeListIO(num_phys_registers).asOutput
+   val debug = Output(new DebugFreeListIO(num_phys_registers))
 }
 
 class DebugFreeListIO(num_phys_registers: Int) extends Bundle
@@ -359,19 +359,19 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
 class BusyTableIo(pipeline_width:Int, num_read_ports:Int, num_wb_ports:Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
    // reading out the busy bits
-   val p_rs           = Vec(num_read_ports, UInt(PREG_SZ.W)).asInput
-   val p_rs_busy      = Vec(num_read_ports, Bool()).asOutput
+   val p_rs           = Input(Vec(num_read_ports, UInt(PREG_SZ.W)))
+   val p_rs_busy      = Output(Vec(num_read_ports, Bool()))
 
    def prs(i:Int, w:Int):UInt      = p_rs     (w+i*pipeline_width)
    def prs_busy(i:Int, w:Int):Bool = p_rs_busy(w+i*pipeline_width)
 
    // marking new registers as busy
-   val allocated_pdst = Vec(pipeline_width, new ValidIO(UInt(PREG_SZ.W))).asInput
+   val allocated_pdst = Flipped(Vec(pipeline_width, new ValidIO(UInt(PREG_SZ.W))))
 
    // marking registers being written back as unbusy
-   val unbusy_pdst    = Vec(num_wb_ports, new ValidIO(UInt(PREG_SZ.W))).asInput
+   val unbusy_pdst    = Flipped(Vec(num_wb_ports, new ValidIO(UInt(PREG_SZ.W))))
 
-   val debug = new Bundle { val bsy_table= Bits(PHYS_REG_COUNT.W).asOutput }
+   val debug = new Bundle { val bsy_table= Output(Bits(PHYS_REG_COUNT.W)) }
 }
 
 // Register P0 is always NOT_BUSY, and cannot be set to BUSY
@@ -423,36 +423,36 @@ class BusyTable(pipeline_width:Int, num_read_ports:Int, num_wb_ports:Int)(implic
 
 class RenameStageIO(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val ren_mask  = Vec(pl_width, Bool().asOutput) // mask of valid instructions
-   val inst_can_proceed = Vec(pl_width, Bool()).asOutput
+   val ren_mask  = Output(Vec(pl_width, Bool())) // mask of valid instructions
+   val inst_can_proceed = Output(Vec(pl_width, Bool()))
 
    val kill      = Input(Bool())
 
-   val dec_mask  = Vec(pl_width, Bool()).asInput
+   val dec_mask  = Input(Vec(pl_width, Bool()))
 
-   val dec_uops  = Vec(pl_width, new MicroOp()).asInput
-   val ren_uops  = Vec(pl_width, new MicroOp().asOutput)
+   val dec_uops  = Input(Vec(pl_width, new MicroOp()))
+   val ren_uops  = Output(Vec(pl_width, new MicroOp()))
 
-   val ren_pred_info = new BranchPredictionResp().asInput
+   val ren_pred_info = Input(new BranchPredictionResp())
 
    // branch resolution (execute)
-   val brinfo    = new BrResolutionInfo().asInput
+   val brinfo    = Input(new BrResolutionInfo())
    val get_pred  = Flipped(new GetPredictionInfo())
 
-   val dis_inst_can_proceed = Vec(DISPATCH_WIDTH, Bool()).asInput
+   val dis_inst_can_proceed = Input(Vec(DISPATCH_WIDTH, Bool()))
 
    // issue stage (fast wakeup)
-   val wb_valids = Vec(num_wb_ports, Bool()).asInput
-   val wb_pdsts  = Vec(num_wb_ports, UInt(PREG_SZ.W)).asInput
+   val wb_valids = Input(Vec(num_wb_ports, Bool()))
+   val wb_pdsts  = Input(Vec(num_wb_ports, UInt(PREG_SZ.W)))
 
    // commit stage
-   val com_valids = Vec(pl_width, Bool()).asInput
-   val com_uops   = Vec(pl_width, new MicroOp()).asInput
-   val com_rbk_valids = Vec(pl_width, Bool()).asInput
+   val com_valids = Input(Vec(pl_width, Bool()))
+   val com_uops   = Input(Vec(pl_width, new MicroOp()))
+   val com_rbk_valids = Input(Vec(pl_width, Bool()))
 
    val flush_pipeline = Input(Bool()) // TODO only used for SCR (single-cycle reset)
 
-   val debug = new DebugRenameStageIO().asOutput
+   val debug = Output(new DebugRenameStageIO())
 }
 
 class DebugRenameStageIO(implicit p: Parameters) extends BoomBundle()(p)

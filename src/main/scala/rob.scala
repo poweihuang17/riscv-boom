@@ -41,8 +41,8 @@ class RobIo(machine_width: Int
 {
    // Dispatch Stage
    // (Write Instruction to ROB from Dispatch Stage)
-   val dis_valids       = Vec(machine_width, Bool()).asInput
-   val dis_uops         = Vec(machine_width, new MicroOp()).asInput
+   val dis_valids       = Input(Vec(machine_width, Bool()))
+   val dis_uops         = Input(Vec(machine_width, new MicroOp()))
    val dis_has_br_or_jalr_in_packet = Input(Bool())
    val dis_partial_stall= Input(Bool()) // we're dispatching only a partial packet, and stalling on the rest of it (don't
                                       // advance the tail ptr)
@@ -51,7 +51,7 @@ class RobIo(machine_width: Int
    val curr_rob_tail    = Output(UInt(ROB_ADDR_SZ.W))
 
    // Handle Branch Misspeculations
-   val brinfo = new BrResolutionInfo().asInput
+   val brinfo = Input(new BrResolutionInfo())
 
    // Let the Branch Unit read out an instruction's PC
    val get_pc = new RobPCRequest()
@@ -66,8 +66,8 @@ class RobIo(machine_width: Int
 
    // Track side-effects for debug purposes.
    // Also need to know when loads write back, whereas we don't need loads to unbusy.
-   val debug_wb_valids  = Vec(num_wakeup_ports, Bool()).asInput
-   val debug_wb_wdata   = Vec(num_wakeup_ports, Bits(xLen.W)).asInput
+   val debug_wb_valids  = Input(Vec(num_wakeup_ports, Bool()))
+   val debug_wb_wdata   = Input(Vec(num_wakeup_ports, Bits(xLen.W)))
 
    val fflags = Flipped(Vec(num_fpu_ports, new ValidIO(new FFlagsResp())))
    val lxcpt = Flipped(new ValidIO(new Exception())) // LSU
@@ -75,7 +75,7 @@ class RobIo(machine_width: Int
    val cxcpt = Flipped(new ValidIO(new Exception())) // CSR
 
    // Commit stage (free resources; also used for rollback).
-   val commit = new CommitSignals(machine_width).asOutput
+   val commit = Output(new CommitSignals(machine_width))
 
    // tell the LSU that the head of the ROB is a load
    // (some loads can only execute once they are at the head of the ROB).
@@ -99,7 +99,7 @@ class RobIo(machine_width: Int
    val brob_deallocate  = Valid(new BrobDeallocateIdx)
 
    // pass out debug information to high-level printf
-   val debug = new DebugRobSignals().asOutput
+   val debug = Output(new DebugRobSignals())
 
    val debug_tsc = Input(UInt(xLen.W))
 }

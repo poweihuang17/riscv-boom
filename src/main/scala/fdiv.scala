@@ -15,7 +15,7 @@ package boom
 
 // import chisel3._
 // import chisel3.util._
-import chisel3.Input
+import chisel3.{Input, Output}
 import Chisel._
 import cde.Parameters
 
@@ -26,7 +26,7 @@ class UOPCodeFDivDecoder extends Module
 {
   val io = IO(new Bundle {
     val uopc = Input(Bits(UOPC_SZ.W))
-    val sigs = new rocket.FPUCtrlSigs().asOutput
+    val sigs = Output(new rocket.FPUCtrlSigs())
   })
 
    val N = BitPat("b0")

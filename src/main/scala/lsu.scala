@@ -58,9 +58,9 @@ class LoadStoreUnitIO(pl_width: Int)(implicit p: Parameters) extends BoomBundle(
    // Decode Stage
    // Track which stores are "alive" in the pipeline
    // allows us to know which stores get killed by branch mispeculation
-   val dec_st_vals        = Vec(pl_width,  Bool()).asInput
-   val dec_ld_vals        = Vec(pl_width,  Bool()).asInput
-   val dec_uops           = Vec(pl_width, new MicroOp()).asInput
+   val dec_st_vals        = Input(Vec(pl_width,  Bool()))
+   val dec_ld_vals        = Input(Vec(pl_width,  Bool()))
+   val dec_uops           = Input(Vec(pl_width, new MicroOp()))
 
    val new_ldq_idx        = Output(UInt(MEM_ADDR_SZ.W))
    val new_stq_idx        = Output(UInt(MEM_ADDR_SZ.W))
@@ -69,15 +69,15 @@ class LoadStoreUnitIO(pl_width: Int)(implicit p: Parameters) extends BoomBundle(
    val exe_resp           = Flipped(new ValidIO(new FuncUnitResp(xLen)))
 
    // Commit Stage
-   val commit_store_mask  = Vec(pl_width, Bool()).asInput
-   val commit_load_mask   = Vec(pl_width, Bool()).asInput
+   val commit_store_mask  = Input(Vec(pl_width, Bool()))
+   val commit_load_mask   = Input(Vec(pl_width, Bool()))
    val commit_load_at_rob_head = Input(Bool())
 
    // Send out Memory Request
    val memreq_val         = Output(Bool())
    val memreq_addr        = Output(UInt(corePAddrBits.W))
    val memreq_wdata       = Output(UInt(xLen.W))
-   val memreq_uop         = new MicroOp().asOutput
+   val memreq_uop         = Output(new MicroOp())
 
    val memreq_kill        = Output(Bool()) // kill request sent out last cycle
 
@@ -85,13 +85,13 @@ class LoadStoreUnitIO(pl_width: Int)(implicit p: Parameters) extends BoomBundle(
    // TODO turn into forward bundle
    val forward_val        = Output(Bool())
    val forward_data       = Output(UInt(xLen.W))
-   val forward_uop        = new MicroOp().asOutput // the load microop (for its pdst)
+   val forward_uop        = Output(new MicroOp()) // the load microop (for its pdst)
 
    // Receive Memory Response
    val memresp            = Flipped(new ValidIO(new MicroOp()))
 
    // Handle Branch Misspeculations
-   val brinfo             = new BrResolutionInfo().asInput
+   val brinfo             = Input(new BrResolutionInfo())
 
    // Stall Decode as appropriate
    val laq_full           = Output(Bool())
@@ -105,7 +105,7 @@ class LoadStoreUnitIO(pl_width: Int)(implicit p: Parameters) extends BoomBundle(
    val xcpt = new ValidIO(new Exception)
 
    // cache nacks
-   val nack               = new NackInfo().asInput
+   val nack               = Input(new NackInfo())
 
 // causing stuff to dissapear
 //   val dmem = Flipped(new DCMemPortIO())

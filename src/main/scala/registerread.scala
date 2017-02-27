@@ -28,20 +28,20 @@ class RegisterReadIO(
 )(implicit p: Parameters) extends  BoomBundle()(p)
 {
    // issued micro-ops
-   val iss_valids = Vec(issue_width, Bool()).asInput
-   val iss_uops   = Vec(issue_width, new MicroOp()).asInput
+   val iss_valids = Input(Vec(issue_width, Bool()))
+   val iss_uops   = Input(Vec(issue_width, new MicroOp()))
 
    // interface with register file's read ports
    val rf_read_ports = Flipped(Vec(num_total_read_ports, new RegisterFileReadPortIO(PREG_SZ, register_width)))
 //   val rf_read_ports = Vec(num_total_read_ports, new RegisterFileReadPortIO(PREG_SZ, register_width).flip)
 
-   val bypass = new BypassData(num_total_bypass_ports, register_width).asInput
+   val bypass = Input(new BypassData(num_total_bypass_ports, register_width))
 
    // send micro-ops to the execution pipelines
    val exe_reqs = Vec(issue_width, (new DecoupledIO(new FuncUnitReq(register_width))))
 
    val kill   = Input(Bool())
-   val brinfo = new BrResolutionInfo().asInput
+   val brinfo = Input(new BrResolutionInfo())
 
    override def cloneType =
       new RegisterReadIO(issue_width, num_total_read_ports, num_total_bypass_ports, register_width

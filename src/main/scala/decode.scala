@@ -337,11 +337,11 @@ object FDivSqrtDecode extends DecodeConstants
 
 class DecodeUnitIo(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val enq = new Bundle { val uop = new MicroOp().asInput }
-   val deq = new Bundle { val uop = new MicroOp().asOutput }
+   val enq = new Bundle { val uop = Input(new MicroOp()) }
+   val deq = new Bundle { val uop = Output(new MicroOp()) }
 
    // from CSRFile
-   val status = new rocket.MStatus().asInput
+   val status = Input(new rocket.MStatus())
    val interrupt = Input(Bool())
    val interrupt_cause = Input(UInt(xLen.W))
 
@@ -593,24 +593,24 @@ class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) exten
    val io = IO(new Bundle
    {
       // guess if the uop is a branch (we'll catch this later)
-      val is_branch = Vec(pl_width, Bool()).asInput
+      val is_branch = Input(Vec(pl_width, Bool()))
       // lock in that it's actually a branch and will fire, so we update
       // the branch_masks.
-      val will_fire = Vec(pl_width, Bool()).asInput
+      val will_fire = Input(Vec(pl_width, Bool()))
 
       // give out tag immediately (needed in rename)
       // mask can come later in the cycle
-      val br_tag    = Vec(pl_width, UInt(BR_TAG_SZ.W)).asOutput
-      val br_mask   = Vec(pl_width, UInt(MAX_BR_COUNT.W)).asOutput
+      val br_tag    = Output(Vec(pl_width, UInt(BR_TAG_SZ.W)))
+      val br_mask   = Output(Vec(pl_width, UInt(MAX_BR_COUNT.W)))
 
        // tell decoders the branch mask has filled up, but on the granularity
        // of an individual micro-op (so some micro-ops can go through)
-      val is_full   = Vec(pl_width, Bool()).asOutput
+      val is_full   = Output(Vec(pl_width, Bool()))
 
-      val brinfo         = new BrResolutionInfo().asInput
+      val brinfo         = Input(new BrResolutionInfo())
       val flush_pipeline = Input(Bool())
 
-      val debug = new DebugBranchMaskGenerationLogicIO().asOutput
+      val debug = Output(new DebugBranchMaskGenerationLogicIO())
    })
 
    val branch_mask = Reg(init = 0.U(MAX_BR_COUNT.W))

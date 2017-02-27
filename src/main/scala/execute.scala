@@ -51,14 +51,14 @@ class ExecutionUnitIO(num_rf_read_ports: Int
 
    val req     = Flipped(new DecoupledIO(new FuncUnitReq(data_width)))
    val resp    = Vec(num_rf_write_ports, new DecoupledIO(new ExeUnitResp(data_width)))
-   val bypass  = new BypassData(num_bypass_ports, data_width).asOutput
-   val brinfo  = new BrResolutionInfo().asInput
+   val bypass  = Output(new BypassData(num_bypass_ports, data_width))
+   val brinfo  = Input(new BrResolutionInfo())
 
    // only used by the branch unit
-   val br_unit = new BranchUnitResp().asOutput
+   val br_unit = Output(new BranchUnitResp())
    val get_rob_pc = Flipped(new RobPCRequest())
    val get_pred = new GetPredictionInfo
-   val status = new rocket.MStatus().asInput
+   val status = Input(new rocket.MStatus())
 
    // only used by the fpu unit
    val fcsr_rm = Input(Bits(rocket.FPConstants.RM_SZ.W))

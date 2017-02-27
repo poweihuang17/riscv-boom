@@ -24,23 +24,20 @@ class IssueSlotIO(num_wakeup_ports: Int)(implicit p: Parameters) extends BoomBun
    val request_hp     = Output(Bool())
    val grant          = Input(Bool())
 
-   val brinfo         = new BrResolutionInfo().asInput
+   val brinfo         = Input(new BrResolutionInfo())
    val kill           = Input(Bool()) // pipeline flush
    val clear          = Input(Bool()) // entry being moved elsewhere (not mutually exclusive with grant)
 
-   val wakeup_dsts    = Vec(num_wakeup_ports, Valid(UInt(PREG_SZ.W))).asInput
-   val in_uop         = Valid(new MicroOp()).asInput // if valid, this WILL overwrite an entry!
-   val updated_uop    = new MicroOp().asOutput // the updated slot uop; will be shifted upwards in a collasping queue.
-   val uop            = new MicroOp().asOutput // the current Slot's uop. Sent down the pipeline when issued.
+   val wakeup_dsts    = Flipped(Vec(num_wakeup_ports, Valid(UInt(PREG_SZ.W))))
+   val in_uop         = Flipped(Valid(new MicroOp())) // if valid, this WILL overwrite an entry!
+   val updated_uop    = Output(new MicroOp()) // the updated slot uop; will be shifted upwards in a collasping queue.
+   val uop            = Output(new MicroOp()) // the current Slot's uop. Sent down the pipeline when issued.
 
-   val debug = {
-     val result = new Bundle {
-       val p1 = Bool()
-       val p2 = Bool()
-       val p3 = Bool()
-    }
-    result.asOutput
-  }
+   val debug = Output(new Bundle {
+     val p1 = Bool()
+     val p2 = Bool()
+     val p3 = Bool()
+   })
 
    override def cloneType = new IssueSlotIO(num_wakeup_ports)(p).asInstanceOf[this.type]
 }

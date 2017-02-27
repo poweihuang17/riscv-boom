@@ -10,7 +10,7 @@ package boom
 
 // import chisel3._
 // import chisel3.util._
-import chisel3.Input
+import chisel3.{Input, Output}
 import Chisel._
 import cde.Parameters
 
@@ -28,7 +28,7 @@ class UOPCodeFPUDecoder extends Module
 {
   val io = IO(new Bundle {
     val uopc = Input(Bits(UOPC_SZ.W))
-    val sigs = new FPUCtrlSigs().asOutput
+    val sigs = Output(new FPUCtrlSigs())
   })
 
    // TODO change N,Y,X to BitPat("b1"), BitPat("b0"), and BitPat("b?")

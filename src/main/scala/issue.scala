@@ -22,18 +22,18 @@ import _root_.util.Str
 
 class IssueUnitIO(issue_width: Int, num_wakeup_ports: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val dis_valids     = Vec(DISPATCH_WIDTH, Bool()).asInput
-   val dis_uops       = Vec(DISPATCH_WIDTH, new MicroOp()).asInput
-   val dis_readys     = Vec(DISPATCH_WIDTH, Bool()).asOutput
+   val dis_valids     = Input(Vec(DISPATCH_WIDTH, Bool()))
+   val dis_uops       = Input(Vec(DISPATCH_WIDTH, new MicroOp()))
+   val dis_readys     = Output(Vec(DISPATCH_WIDTH, Bool()))
 
-   val iss_valids     = Vec(issue_width, Bool()).asOutput
-   val iss_uops       = Vec(issue_width, new MicroOp().asOutput)
-   val wakeup_pdsts   = Vec(num_wakeup_ports, Valid(UInt(PREG_SZ.W))).asInput
+   val iss_valids     = Output(Vec(issue_width, Bool()))
+   val iss_uops       = Output(Vec(issue_width, new MicroOp()))
+   val wakeup_pdsts   = Input(Vec(num_wakeup_ports, Valid(UInt(PREG_SZ.W))))
 
    // tell the issue unit what each execution pipeline has in terms of functional units
-   val fu_types       = Vec(issue_width, Bits(FUC_SZ.W)).asInput
+   val fu_types       = Input(Vec(issue_width, Bits(FUC_SZ.W)))
 
-   val brinfo         = new BrResolutionInfo().asInput
+   val brinfo         = Input(new BrResolutionInfo())
    val flush_pipeline = Input(Bool())
 
    val tsc_reg        = Input(UInt(xLen.W))

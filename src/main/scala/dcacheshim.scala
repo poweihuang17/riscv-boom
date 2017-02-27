@@ -37,13 +37,13 @@ class LoadReqSlotIo(implicit p: Parameters) extends BoomBundle()(p)
    val valid      = Output(Bool()) // slot has an entry
 
    val wen        = Input(Bool())
-   val in_uop     = new MicroOp().asInput // need ldq_idx, brmask
+   val in_uop     = Input(new MicroOp()) // need ldq_idx, brmask
 
    val clear      = Input(Bool()) // kill slot immediately (either nacked or succeeded)
-   val brinfo     = new BrResolutionInfo().asInput
+   val brinfo     = Input(new BrResolutionInfo())
    val flush_pipe = Input(Bool()) // exceptions, etc. but keep slot valid
 
-   val out_uop    = new MicroOp().asOutput // need ldq_idx
+   val out_uop    = Output(new MicroOp()) // need ldq_idx
 
    val was_killed = Output(Bool()) // should we filter out returning mem op?
 }
@@ -150,8 +150,8 @@ class DCMemPortIO(implicit p: Parameters) extends BoomBundle()(p)
    val req     = (new DecoupledIO(new DCacheReq))
    val resp    = Flipped(new ValidIO(new DCacheResp))
 
-   val brinfo  = new BrResolutionInfo().asOutput
-   val nack    = new NackInfo().asInput
+   val brinfo  = Output(new BrResolutionInfo())
+   val nack    = Input(new NackInfo())
    val flush_pipe  = Output(Bool())   // exception or other misspec which flushes entire pipeline
    val invalidate_lr = Output(Bool()) // should the dcache clear ld/sc reservations?
    val ordered = Input(Bool())        // is the dcache ordered? (fence is done)

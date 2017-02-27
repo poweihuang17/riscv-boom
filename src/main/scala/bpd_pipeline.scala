@@ -81,9 +81,9 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
       val npc        = Input(UInt(vaddrBitsExtended.W))
       val ras_update = Valid(new rocket.RASUpdate)
 
-      val pred_resp  = new BranchPredictionResp().asOutput
-      val predictions= Vec(fetch_width, new BranchPrediction().asOutput)
-      val br_unit    = new BranchUnitResp().asInput
+      val pred_resp  = Output(new BranchPredictionResp())
+      val predictions= Output(Vec(fetch_width, new BranchPrediction()))
+      val br_unit    = Input(new BranchUnitResp())
 
       val brob       = new BrobBackendIo(fetch_width)
       val flush      = Input(Bool())

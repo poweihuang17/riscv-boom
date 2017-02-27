@@ -272,10 +272,10 @@ class RegisterReadDecode(supported_units: SupportedFuncUnits)(implicit p: Parame
    val io = IO(new BoomBundle()(p)
    {
       val iss_valid = Input(Bool())
-      val iss_uop   = new MicroOp().asInput
+      val iss_uop   = Input(new MicroOp())
 
       val rrd_valid = Output(Bool())
-      val rrd_uop   = new MicroOp().asOutput
+      val rrd_uop   = Output(new MicroOp())
    })
 
    // Issued Instruction
