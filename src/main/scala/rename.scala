@@ -77,7 +77,7 @@ class RenameMapTableElement(pipeline_width: Int)(implicit p: Parameters) extends
 
    for (w <- 0 until pipeline_width)
    {
-      var elm_cases = Array((Bool(false),  UInt(0,PREG_SZ)))
+      var elm_cases = Array((false.B,  UInt(0,PREG_SZ)))
 
       for (xx <- w to 0 by -1)
       {
@@ -196,7 +196,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
    // ------------------------------------------
    // find new,free physical registers
 
-   val requested_pregs_oh_array = Array.fill(pl_width,num_phys_registers){Bool(false)}
+   val requested_pregs_oh_array = Array.fill(pl_width,num_phys_registers){false.B}
    val requested_pregs_oh       = Wire(Vec(pl_width, Bits(width=num_phys_registers)))
    val requested_pregs          = Wire(Vec(pl_width, UInt(width=log2Up(num_phys_registers))))
    var allocated                = Wire(Vec(pl_width, Bool())) // did each inst get allocated a register?
@@ -204,7 +204,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
    // init
    for (w <- 0 until pl_width)
    {
-      allocated(w) := Bool(false)
+      allocated(w) := false.B
    }
 
 
@@ -246,7 +246,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
    // track which allocation_lists just got cleared out by a branch,
    // to enforce a write priority to allocation_lists()
    val br_cleared = Wire(Vec(MAX_BR_COUNT, Bool()))
-   for (i <- 0 until MAX_BR_COUNT) { br_cleared(i) := Bool(false) }
+   for (i <- 0 until MAX_BR_COUNT) { br_cleared(i) := false.B }
 
    for (w <- pl_width-1 to 0 by -1)
    {
@@ -255,7 +255,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
       when (io.ren_br_vals(w))
       {
          allocation_lists(io.ren_br_tags(w)) := just_allocated_mask
-         br_cleared(io.ren_br_tags(w)) := Bool(true)
+         br_cleared(io.ren_br_tags(w)) := true.B
       }
 
       // check that we both request a register and was able to allocate a register
@@ -382,12 +382,12 @@ class BusyTable(pipeline_width:Int, num_read_ports:Int, num_wb_ports:Int)(implic
 {
    val io = IO(new BusyTableIo(pipeline_width, num_read_ports, num_wb_ports))
 
-   def BUSY     = Bool(true)
-   def NOT_BUSY = Bool(false)
+   def BUSY     = true.B
+   def NOT_BUSY = false.B
 
    //TODO BUG chisel3
    //val table_bsy = Reg(init=Bits(0,PHYS_REG_COUNT))
-   val table_bsy = Reg(init=Vec.fill(PHYS_REG_COUNT){Bool(false)})
+   val table_bsy = Reg(init=Vec.fill(PHYS_REG_COUNT){false.B})
 
    for (wb_idx <- 0 until num_wb_ports)
    {
@@ -478,7 +478,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
       io.ren_mask(w)         := io.dec_mask(w) && io.inst_can_proceed(w) && !io.kill
       io.ren_uops(w)         := io.dec_uops(w)
       io.ren_uops(w).br_mask := GetNewBrMask(io.brinfo, io.dec_uops(w))
-      ren_br_vals(w)         := Mux(io.dec_mask(w), io.dec_uops(w).allocate_brtag, Bool(false))
+      ren_br_vals(w)         := Mux(io.dec_mask(w), io.dec_uops(w).allocate_brtag, false.B)
    }
 
 
@@ -489,10 +489,10 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
 
    for (i <- 0 until LOGICAL_REG_COUNT)
    {
-      map_table_io(i).rollback_wen := Bool(false)
+      map_table_io(i).rollback_wen := false.B
       map_table_io(i).rollback_stale_pdst := io.com_uops(0).stale_pdst
 
-      map_table_io(i).commit_wen := Bool(false)
+      map_table_io(i).commit_wen := false.B
       map_table_io(i).commit_pdst := io.com_uops(0).pdst
 
       for (w <- 0 until pl_width)
@@ -524,7 +524,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
 
       when (io.com_rbk_valids(w))
       {
-         map_table_io(ldst).rollback_wen        := Bool(true)
+         map_table_io(ldst).rollback_wen        := true.B
          map_table_io(ldst).rollback_stale_pdst := io.com_uops(w).stale_pdst
       }
    }
@@ -536,7 +536,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
          val ldst = io.com_uops(w).ldst
          when (io.com_valids(w) && (io.com_uops(w).dst_rtype === RT_FIX || io.com_uops(w).dst_rtype === RT_FLT))
          {
-            map_table_io(ldst).commit_wen := Bool(true)
+            map_table_io(ldst).commit_wen := true.B
             map_table_io(ldst).commit_pdst := io.com_uops(w).pdst
          }
       }
@@ -566,14 +566,14 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
 
    for (w <- 0 until pl_width)
    {
-      var rs1_cases =  Array((Bool(false),  UInt(0,PREG_SZ)))
-      var rs2_cases =  Array((Bool(false),  UInt(0,PREG_SZ)))
-      var rs3_cases =  Array((Bool(false),  UInt(0,PREG_SZ)))
-      var stale_cases= Array((Bool(false),  UInt(0,PREG_SZ)))
+      var rs1_cases =  Array((false.B,  UInt(0,PREG_SZ)))
+      var rs2_cases =  Array((false.B,  UInt(0,PREG_SZ)))
+      var rs3_cases =  Array((false.B,  UInt(0,PREG_SZ)))
+      var stale_cases= Array((false.B,  UInt(0,PREG_SZ)))
 
-      prs1_was_bypassed(w) := Bool(false)
-      prs2_was_bypassed(w) := Bool(false)
-      prs3_was_bypassed(w) := Bool(false)
+      prs1_was_bypassed(w) := false.B
+      prs2_was_bypassed(w) := false.B
+      prs3_was_bypassed(w) := false.B
 
       // Handle bypassing new physical destinations to operands (and stale destination)
       // scalastyle:off
@@ -587,11 +587,11 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
          stale_cases++= Array(( io.ren_uops(w).ldst_val          && io.ren_mask(xx) && io.ren_uops(xx).ldst_val && (io.ren_uops(w).ldst === io.ren_uops(xx).ldst), (io.ren_uops(xx).pdst)))
 
          when ((io.ren_uops(w).lrs1_rtype === RT_FIX || io.ren_uops(w).lrs1_rtype === RT_FLT) && io.ren_mask(xx) && io.ren_uops(xx).ldst_val && (io.ren_uops(w).lrs1 === io.ren_uops(xx).ldst))
-            { prs1_was_bypassed(w) := Bool(true) }
+            { prs1_was_bypassed(w) := true.B }
          when ((io.ren_uops(w).lrs2_rtype === RT_FIX || io.ren_uops(w).lrs2_rtype === RT_FLT) && io.ren_mask(xx) && io.ren_uops(xx).ldst_val && (io.ren_uops(w).lrs2 === io.ren_uops(xx).ldst))
-            { prs2_was_bypassed(w) := Bool(true) }
+            { prs2_was_bypassed(w) := true.B }
          when (io.ren_uops(w).frs3_en                                                         && io.ren_mask(xx) && io.ren_uops(xx).ldst_val && (io.ren_uops(w).lrs3 === io.ren_uops(xx).ldst))
-            { prs3_was_bypassed(w) := Bool(true) }
+            { prs3_was_bypassed(w) := true.B }
       }
 
       // add default case where we can just read the map table for our information
@@ -640,7 +640,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
          }
          else
          {
-            io.ren_uops(w).prs3_busy := Bool(false)
+            io.ren_uops(w).prs3_busy := false.B
          }
 
 

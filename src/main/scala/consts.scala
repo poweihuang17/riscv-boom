@@ -37,8 +37,8 @@ trait BOOMDebugConstants
 
 trait BrPredConstants
 {
-   val NOT_TAKEN = Bool(false)
-   val TAKEN = Bool(true)
+   val NOT_TAKEN = false.B
+   val TAKEN = true.B
 }
 
 trait ScalarOpConstants
@@ -87,20 +87,20 @@ trait ScalarOpConstants
    val OP2_X   = BitPat("b???")
 
    // Register File Write Enable Signal
-   val REN_0   = Bool(false)
-   val REN_1   = Bool(true)
+   val REN_0   = false.B
+   val REN_1   = true.B
 
    // Is 32b Word or 64b Doubldword?
    val SZ_DW = 1
-   val DW_X   = Bool(true) // Bool(xLen==64)
-   val DW_32  = Bool(false)
-   val DW_64  = Bool(true)
-   val DW_XPR = Bool(true) // Bool(xLen==64)
+   val DW_X   = true.B // Bool(xLen==64)
+   val DW_32  = false.B
+   val DW_64  = true.B
+   val DW_XPR = true.B // Bool(xLen==64)
 
    // Memory Enable Signal
-   val MEN_0   = Bool(false)
-   val MEN_1   = Bool(true)
-   val MEN_X   = Bool(false)
+   val MEN_0   = false.B
+   val MEN_1   = true.B
+   val MEN_X   = false.B
 
    // Immediate Extend Select
    val IS_I   = UInt(0, 3)  // I-Type  (LD,ALU)
@@ -288,23 +288,23 @@ trait ScalarOpConstants
    {
       val uop = Wire(new MicroOp()(p))
       uop.uopc       := uopNOP // maybe not required, but helps on asserts that try to catch spurious behavior
-      uop.bypassable := Bool(false)
-      uop.fp_val     := Bool(false)
-      uop.is_store   := Bool(false)
-      uop.is_load    := Bool(false)
+      uop.bypassable := false.B
+      uop.fp_val     := false.B
+      uop.is_store   := false.B
+      uop.is_load    := false.B
       uop.pdst       := UInt(0)
       uop.dst_rtype  := RT_X
-      uop.valid      := Bool(false)
+      uop.valid      := false.B
       // TODO these unnecessary? used in regread stage?
-      uop.is_br_or_jmp := Bool(false)
+      uop.is_br_or_jmp := false.B
 
       val cs = Wire(new CtrlSignals())
       cs.br_type     := BR_N
-      cs.rf_wen      := Bool(false)
+      cs.rf_wen      := false.B
       cs.csr_cmd     := rocket.CSR.N
-      cs.is_load     := Bool(false)
-      cs.is_sta      := Bool(false)
-      cs.is_std      := Bool(false)
+      cs.is_load     := false.B
+      cs.is_sta      := false.B
+      cs.is_std      := false.B
 
       uop.ctrl := cs
       uop

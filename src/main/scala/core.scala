@@ -144,7 +144,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    // (only used for printf and vcd dumps - the actual counters are in the CSRFile)
    val tsc_reg  = Reg(init = UInt(0, xLen))
    val irt_reg  = Reg(init = UInt(0, xLen))
-   tsc_reg  := tsc_reg + Mux(Bool(O3PIPEVIEW_PRINTF), UInt(O3_CYCLE_TIME), UInt(1))
+   tsc_reg  := tsc_reg + Mux(O3PIPEVIEW_PRINTF.B, UInt(O3_CYCLE_TIME), UInt(1))
    irt_reg  := irt_reg + PopCount(rob.io.commit.valids.asUInt())
 
 
@@ -278,8 +278,8 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    // Decoders
 
    // allow early instructions to stall later instructions
-   var dec_stall_next_inst = Bool(false)
-   var dec_last_inst_was_stalled = Bool(false)
+   var dec_stall_next_inst = false.B
+   var dec_last_inst_was_stalled = false.B
 
    // stall fetch/dcode because we ran out of branch tags
    val branch_mask_full = Wire(Vec(DECODE_WIDTH, Bool()))
@@ -292,7 +292,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
       decode_units(w).io.interrupt       := csr.io.interrupt
       decode_units(w).io.interrupt_cause := csr.io.interrupt_cause
 
-      val prev_insts_in_bundle_valid = Range(0,w).map{i => dec_valids(i)}.foldLeft(Bool(false))(_|_)
+      val prev_insts_in_bundle_valid = Range(0,w).map{i => dec_valids(i)}.foldLeft(false.B)(_|_)
 
       // stall this instruction?
       // TODO tailor this to only care if a given instruction uses a resource?
@@ -479,10 +479,10 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    bpd_stage.io.brob.allocate.valid := dis_valids.reduce(_|_) &&
                                        dec_finished_mask === Bits(0) &&
                                        dec_has_br_or_jalr_in_packet
-   bpd_stage.io.brob.allocate.bits.ctrl.executed.map{_ := Bool(false)}
-   bpd_stage.io.brob.allocate.bits.ctrl.taken.map{_ := Bool(false)}
-   bpd_stage.io.brob.allocate.bits.ctrl.mispredicted.map{_ := Bool(false)}
-   bpd_stage.io.brob.allocate.bits.ctrl.debug_executed := Bool(false)
+   bpd_stage.io.brob.allocate.bits.ctrl.executed.map{_ := false.B}
+   bpd_stage.io.brob.allocate.bits.ctrl.taken.map{_ := false.B}
+   bpd_stage.io.brob.allocate.bits.ctrl.mispredicted.map{_ := false.B}
+   bpd_stage.io.brob.allocate.bits.ctrl.debug_executed := false.B
    bpd_stage.io.brob.allocate.bits.ctrl.debug_rob_idx := dis_uops(0).rob_idx
    bpd_stage.io.brob.allocate.bits.ctrl.brob_idx := dis_uops(0).brob_idx
    bpd_stage.io.brob.allocate.bits.info := dec_fbundle.pred_resp.bpd_resp

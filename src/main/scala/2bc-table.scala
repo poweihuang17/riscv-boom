@@ -100,7 +100,7 @@ class PTableDualPorted(
 {
    val p_table = SeqMem(num_entries, Vec(fetch_width, Bool()))
 
-   io.update.ready := Bool(true)
+   io.update.ready := true.B
 
    when (io.update.valid)
    {

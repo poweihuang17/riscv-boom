@@ -142,7 +142,7 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
    }
    else
    {
-      io.imem.btb_update.valid := Bool(false)
+      io.imem.btb_update.valid := false.B
    }
 
    // update the BTB
@@ -158,8 +158,8 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
    io.imem.btb_update.bits.taken      := Mux(br_unit.btb_update_valid, br_unit.btb_update.taken,
                                                                        io.bp2_take_pc && io.bp2_is_taken && !if_stalled)
    io.imem.btb_update.bits.isJump     := Mux(br_unit.btb_update_valid, br_unit.btb_update.isJump, io.bp2_is_jump)
-   io.imem.btb_update.bits.isReturn   := Mux(br_unit.btb_update_valid, br_unit.btb_update.isReturn, Bool(false))
-   io.imem.btb_update.bits.isValid    := Mux(br_unit.btb_update_valid, Bool(true), io.bp2_is_cfi)
+   io.imem.btb_update.bits.isReturn   := Mux(br_unit.btb_update_valid, br_unit.btb_update.isReturn, false.B)
+   io.imem.btb_update.bits.isValid    := Mux(br_unit.btb_update_valid, true.B, io.bp2_is_cfi)
 
    // Update the BHT in the BP2 stage.
    // Also update the BHT in the Exe stage IF and only if the branch is a misprediction.

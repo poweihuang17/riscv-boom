@@ -88,14 +88,14 @@ class Prefetcher(implicit p: Parameters) extends BoomModule()(p)
 
 
    // set default value on output
-   request_queue.io.enq.valid := Bool(false)
+   request_queue.io.enq.valid := false.B
 
    // if we see a request and it was a miss, prefetch the next line
    // however, ignore it if it's a secondary miss (we've already sent out our
    // prefetch request the first time we saw a miss to this cache line).
    when (io.core_requests.valid && io.core_requests.bits.miss && !io.core_requests.bits.secondary_miss)
    {
-      request_queue.io.enq.valid := Bool(true)
+      request_queue.io.enq.valid := true.B
    }
 
    // fetch the next cache line

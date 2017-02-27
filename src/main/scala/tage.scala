@@ -163,8 +163,8 @@ class TageBrPredictor(
       // return the id of the 2nd highest table with a hit
       // also returns whether a 2nd hit was found (PopCount(hits) > 1)
       val alt_id = Wire(init=UInt(0))
-      var found_first = Bool(false)
-      var found_second = Bool(false)
+      var found_first = false.B
+      var found_second = false.B
       for (i <- num_tables-1 to 0 by -1)
       {
          when (found_first && !found_second)
@@ -340,8 +340,8 @@ class TageBrPredictor(
    val rand = Reg(init=UInt(0,2))
    rand := rand + UInt(1)
 
-   val ubit_update_wens = Wire(init = Vec.fill(num_tables) {Bool(false)})
-   val ubit_update_incs = Wire(init = Vec.fill(num_tables) {Bool(false)})
+   val ubit_update_wens = Wire(init = Vec.fill(num_tables) {false.B})
+   val ubit_update_incs = Wire(init = Vec.fill(num_tables) {false.B})
 
    when (s2_commit.valid && s2_commit.bits.ctrl.executed.reduce(_|_))
    {
@@ -351,7 +351,7 @@ class TageBrPredictor(
          tables_io(s2_provider_id).UpdateCounters(s2_info.indexes(s2_provider_id), s2_executed, s2_takens, !s2_correct)
          when (!s2_alt_agrees)
          {
-            ubit_update_wens(s2_provider_id) := Bool(true)
+            ubit_update_wens(s2_provider_id) := true.B
             ubit_update_incs(s2_provider_id) := s2_correct
          }
       }
@@ -402,8 +402,8 @@ class TageBrPredictor(
             {
                when ((UInt(i) > s2_provider_id) || !s2_info.provider_hit)
                {
-                  ubit_update_wens(i) := Bool(true)
-                  ubit_update_incs(i) := Bool(false)
+                  ubit_update_wens(i) := true.B
+                  ubit_update_incs(i) := false.B
                }
             }
          }

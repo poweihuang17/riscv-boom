@@ -76,7 +76,7 @@ class CtrlSigs extends Bundle
          , is_fence, is_fencei, mem_cmd, mem_typ, wakeup_delay, bypassable
          , br_or_jmp, is_jal, allocate_brtag, inst_unique, flush_on_commit, csr_cmd)
       sigs zip decoder map {case(s,d) => s := d}
-      rocc := Bool(false)
+      rocc := false.B
       this
    }
 }
@@ -390,7 +390,7 @@ class DecodeUnit(implicit p: Parameters) extends BoomModule()(p)
    uop.ldst       := Cat(cs.dst_type === RT_FLT, uop.inst(RD_MSB,RD_LSB))
    uop.lrs1       := Cat(cs.rs1_type === RT_FLT, uop.inst(RS1_MSB,RS1_LSB))
    uop.lrs2       := Cat(cs.rs2_type === RT_FLT, uop.inst(RS2_MSB,RS2_LSB))
-   uop.lrs3       := Cat(Bool(true),             uop.inst(RS3_MSB,RS3_LSB))
+   uop.lrs3       := Cat(true.B,             uop.inst(RS3_MSB,RS3_LSB))
    // TODO do I need to remove (uop.lrs3) for integer-only? Or do synthesis tools properly remove it?
 
    uop.ldst_val   := (cs.dst_type =/= RT_X && uop.ldst =/= UInt(0))

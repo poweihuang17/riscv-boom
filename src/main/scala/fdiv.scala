@@ -77,7 +77,7 @@ class FDivSqrtUnit(implicit p: Parameters) extends FunctionalUnit(is_pipelined =
    // buffer inputs and upconvert as needed
 
    // provide a one-entry queue to store incoming uops while waiting for the fdiv/fsqrt unit to become available.
-   val r_buffer_val = Reg(init = Bool(false))
+   val r_buffer_val = Reg(init = false.B)
    val r_buffer_req = Reg(new FuncUnitReq(data_width=65))
    val r_buffer_fin = Reg(new rocket.FPInput)
 
@@ -103,7 +103,7 @@ class FDivSqrtUnit(implicit p: Parameters) extends FunctionalUnit(is_pipelined =
 
    when (io.req.valid && !IsKilledByBranch(io.brinfo, io.req.bits.uop) && !io.req.bits.kill)
    {
-      r_buffer_val := Bool(true)
+      r_buffer_val := true.B
       r_buffer_req := io.req.bits
       r_buffer_req.uop.br_mask := GetNewBrMask(io.brinfo, io.req.bits.uop)
       r_buffer_fin := fdiv_decoder.io.sigs
@@ -125,7 +125,7 @@ class FDivSqrtUnit(implicit p: Parameters) extends FunctionalUnit(is_pipelined =
 
    val divsqrt = Module(new hardfloat.DivSqrtRecF64)
 
-   val r_divsqrt_val = Reg(init = Bool(false))  // inflight uop?
+   val r_divsqrt_val = Reg(init = false.B)  // inflight uop?
    val r_divsqrt_killed = Reg(Bool())           // has inflight uop been killed?
    val r_divsqrt_fin = Reg(new rocket.FPInput)
    val r_divsqrt_uop = Reg(new MicroOp)
@@ -149,9 +149,9 @@ class FDivSqrtUnit(implicit p: Parameters) extends FunctionalUnit(is_pipelined =
          output_buffer_available
          )
    {
-      r_buffer_val := Bool(false) // remove the entry from the buffer
-      r_divsqrt_val := Bool(true)
-      r_divsqrt_killed := Bool(false)
+      r_buffer_val := false.B // remove the entry from the buffer
+      r_divsqrt_val := true.B
+      r_divsqrt_killed := false.B
       r_divsqrt_fin := r_buffer_fin
       r_divsqrt_uop := r_buffer_req.uop
       r_divsqrt_uop.br_mask := GetNewBrMask(io.brinfo, r_buffer_req.uop)
@@ -160,7 +160,7 @@ class FDivSqrtUnit(implicit p: Parameters) extends FunctionalUnit(is_pipelined =
    //-----------------------------------------
    // buffer output and down-convert as needed
 
-   val r_out_val = Reg(init=Bool(false))
+   val r_out_val = Reg(init=false.B)
    val r_out_uop = Reg(new MicroOp)
    val r_out_flags_double = Reg(Bits())
    val r_out_wdata_double = Reg(Bits())
@@ -171,11 +171,11 @@ class FDivSqrtUnit(implicit p: Parameters) extends FunctionalUnit(is_pipelined =
 
    when (io.resp.ready || IsKilledByBranch(io.brinfo, r_out_uop) || io.req.bits.kill)
    {
-      r_out_val := Bool(false)
+      r_out_val := false.B
    }
    when (divsqrt.io.outValid_div || divsqrt.io.outValid_sqrt)
    {
-      r_divsqrt_val := Bool(false)
+      r_divsqrt_val := false.B
 
       r_out_val := !r_divsqrt_killed && !IsKilledByBranch(io.brinfo, r_divsqrt_uop) && !io.req.bits.kill
       r_out_uop := r_divsqrt_uop

@@ -226,7 +226,7 @@ class Rob(width: Int
 
    // exception info
    // TODO compress xcpt cause size
-   val r_xcpt_val       = Reg(init=Bool(false))
+   val r_xcpt_val       = Reg(init=false.B)
    val r_xcpt_uop       = Reg(new MicroOp())
    val r_xcpt_badvaddr  = Reg(UInt(width=coreMaxAddrBits))
 
@@ -306,7 +306,7 @@ class Rob(width: Int
    // Branch Reorder Buffer
 
    val finished_committing_row = Wire(Bool())
-   val r_partial_row = Reg(init = Bool(false))
+   val r_partial_row = Reg(init = false.B)
 
    // TODO abstract out the "RobRowMetaData"
    val row_metadata_brob_idx = Mem(num_rob_rows, UInt(width = BROB_ADDR_SZ))
@@ -324,7 +324,7 @@ class Rob(width: Int
 
    when (io.clear_brob)
    {
-      row_metadata_has_brorjalr(rob_tail) := Bool(false)
+      row_metadata_has_brorjalr(rob_tail) := false.B
    }
 
 
@@ -348,7 +348,7 @@ class Rob(width: Int
       def MatchBank(bank_idx: UInt): Bool = (bank_idx === UInt(w))
 
       // one bank
-      val rob_val       = Reg(init = Vec.fill(num_rob_rows){Bool(false)})
+      val rob_val       = Reg(init = Vec.fill(num_rob_rows){false.B})
       val rob_bsy       = Mem(num_rob_rows, Bool())
       val rob_uop       = Reg(Vec(num_rob_rows, new MicroOp())) // one write port - dispatch
                                                            // fake write ports - clearing on commit,
@@ -361,13 +361,13 @@ class Rob(width: Int
 
       when (io.dis_valids(w))
       {
-         rob_val(rob_tail)       := Bool(true)
+         rob_val(rob_tail)       := true.B
          rob_bsy(rob_tail)       := !io.dis_uops(w).is_fence &&
                                     !(io.dis_uops(w).is_fencei)
          rob_uop(rob_tail)       := io.dis_uops(w)
          rob_exception(rob_tail) := io.dis_uops(w).exception
          rob_fflags(rob_tail)    := Bits(0)
-         rob_uop(rob_tail).stat_brjmp_mispredicted := Bool(false)
+         rob_uop(rob_tail).stat_brjmp_mispredicted := false.B
       }
       .elsewhen (io.dis_valids.reduce(_|_) && !rob_val(rob_tail))
       {
@@ -384,7 +384,7 @@ class Rob(width: Int
          val row_idx = GetRowIdx(wb_uop.rob_idx)
          when (wb_resp.valid && MatchBank(GetBankIdx(wb_uop.rob_idx)))
          {
-            rob_bsy(row_idx) := Bool(false)
+            rob_bsy(row_idx) := false.B
 
             if (O3PIPEVIEW_PRINTF)
             {
@@ -404,7 +404,7 @@ class Rob(width: Int
       // Stores have a separate method to clear busy bits
       when (io.lsu_clr_bsy_valid && MatchBank(GetBankIdx(io.lsu_clr_bsy_rob_idx)))
       {
-         rob_bsy(GetRowIdx(io.lsu_clr_bsy_rob_idx)) := Bool(false)
+         rob_bsy(GetRowIdx(io.lsu_clr_bsy_rob_idx)) := false.B
 
          if (O3PIPEVIEW_PRINTF)
          {
@@ -441,11 +441,11 @@ class Rob(width: Int
 
       when (io.lxcpt.valid && MatchBank(GetBankIdx(io.lxcpt.bits.uop.rob_idx)))
       {
-         rob_exception(GetRowIdx(io.lxcpt.bits.uop.rob_idx)) := Bool(true)
+         rob_exception(GetRowIdx(io.lxcpt.bits.uop.rob_idx)) := true.B
       }
       when (io.bxcpt.valid && MatchBank(GetBankIdx(io.bxcpt.bits.uop.rob_idx)))
       {
-         rob_exception(GetRowIdx(io.bxcpt.bits.uop.rob_idx)) := Bool(true)
+         rob_exception(GetRowIdx(io.bxcpt.bits.uop.rob_idx)) := true.B
       }
       can_throw_exception(w) := rob_val(rob_head) && rob_exception(rob_head)
 
@@ -471,12 +471,12 @@ class Rob(width: Int
                               (rob_state === s_rollback) &&
                               rob_val(com_idx) &&
                               (rob_uop(com_idx).dst_rtype === RT_FIX || rob_uop(com_idx).dst_rtype === RT_FLT) &&
-                              Bool(!ENABLE_COMMIT_MAP_TABLE)
+                              (!ENABLE_COMMIT_MAP_TABLE).B
 
       when (rob_state === s_rollback)
       {
-         rob_val(com_idx)       := Bool(false)
-         rob_exception(com_idx) := Bool(false)
+         rob_val(com_idx)       := false.B
+         rob_exception(com_idx) := false.B
       }
 
       if (ENABLE_COMMIT_MAP_TABLE)
@@ -485,8 +485,8 @@ class Rob(width: Int
          {
             for (i <- 0 until num_rob_rows)
             {
-               rob_val(i)      := Bool(false)
-               rob_bsy(i)      := Bool(false)
+               rob_val(i)      := false.B
+               rob_bsy(i)      := false.B
                rob_uop(i).inst := BUBBLE
             }
          }
@@ -502,7 +502,7 @@ class Rob(width: Int
          //kill instruction if mispredict & br mask match
          when (io.brinfo.valid && io.brinfo.mispredict && entry_match)
          {
-            rob_val(i) := Bool(false)
+            rob_val(i) := false.B
             rob_uop(UInt(i)).inst := BUBBLE
          }
          .elsewhen (io.brinfo.valid && !io.brinfo.mispredict && entry_match)
@@ -516,7 +516,7 @@ class Rob(width: Int
       // Commit
       when (will_commit(w))
       {
-         rob_val(rob_head) := Bool(false)
+         rob_val(rob_head) := false.B
       }
 
       // -----------------------------------------------
@@ -591,8 +591,8 @@ class Rob(width: Int
    // it that want to commit (only throw exception when head of the bundle).
 
    var block_commit = (rob_state =/= s_normal) && (rob_state =/= s_wait_till_empty)
-   var will_throw_exception = Bool(false)
-   var block_xcpt   = Bool(false) // TODO we can relax this constraint, so long
+   var will_throw_exception = false.B
+   var block_xcpt   = false.B // TODO we can relax this constraint, so long
                                   // as we handle committing stores in
                                   // conjuction with exceptions, and exceptions
                                   // with flush_on_commit (I think).
@@ -691,7 +691,7 @@ class Rob(width: Int
          val new_xcpt_uop = Mux(load_is_older, io.lxcpt.bits.uop, io.bxcpt.bits.uop)
          when (!r_xcpt_val || IsOlder(new_xcpt_uop.rob_idx, r_xcpt_uop.rob_idx, rob_tail_idx))
          {
-            r_xcpt_val              := Bool(true)
+            r_xcpt_val              := true.B
             next_xcpt_uop           := new_xcpt_uop
             next_xcpt_uop.exc_cause := Mux(io.lxcpt.valid, io.lxcpt.bits.cause, io.bxcpt.bits.cause)
             r_xcpt_badvaddr         := Mux(io.lxcpt.valid, io.lxcpt.bits.badvaddr, io.bxcpt.bits.badvaddr)
@@ -702,7 +702,7 @@ class Rob(width: Int
          val idx = dis_xcpts.indexWhere{i: Bool => i}
 
          // if no exception yet, dispatch exception wins
-         r_xcpt_val      := Bool(true)
+         r_xcpt_val      := true.B
          next_xcpt_uop   := io.dis_uops(idx)
          r_xcpt_badvaddr := io.dis_uops(0).pc + (idx << UInt(2))
       }
@@ -712,7 +712,7 @@ class Rob(width: Int
    r_xcpt_uop.br_mask := GetNewBrMask(io.brinfo, next_xcpt_uop)
    when (io.flush.valid || IsKilledByBranch(io.brinfo, next_xcpt_uop))
    {
-      r_xcpt_val := Bool(false)
+      r_xcpt_val := false.B
    }
 
    assert (!(exception_thrown && !io.cxcpt.valid && !r_xcpt_val),

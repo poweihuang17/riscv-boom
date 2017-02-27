@@ -47,7 +47,7 @@ class CircularShiftRegisterIO(compressed_length: Int, history_length: Int) exten
    val evict = Input(Bool())
    def shift(taken: Bool, evict: Bool) =
    {
-      this.do_shift := Bool(true)
+      this.do_shift := true.B
       this.taken := taken
       this.evict := evict
    }
@@ -59,9 +59,9 @@ class CircularShiftRegisterIO(compressed_length: Int, history_length: Int) exten
    val rs_evict_bit = Input(Bool())
    // we either perform a rollback or a rollback and shift
    // to handle flushes and branch mispredictions respectively.
-   def rollback(v: UInt, and_shift: Bool, shift_bit: Bool=Bool(false), evict_bit: Bool=Bool(false)) =
+   def rollback(v: UInt, and_shift: Bool, shift_bit: Bool=false.B, evict_bit: Bool=false.B) =
    {
-      do_rollback := Bool(true)
+      do_rollback := true.B
       rollback_value := v
       do_rbk_shift := and_shift
       rs_new_bit := shift_bit
@@ -70,13 +70,13 @@ class CircularShiftRegisterIO(compressed_length: Int, history_length: Int) exten
 
    def InitializeIo(dummy: Int=0) =
    {
-      this.do_shift := Bool(false)
-      this.taken := Bool(false)
-      this.evict := Bool(false)
-      this.do_rollback := Bool(false)
+      this.do_shift := false.B
+      this.taken := false.B
+      this.evict := false.B
+      this.do_rollback := false.B
       this.rollback_value := UInt(0)
-      this.rs_new_bit := Bool(false)
-      this.rs_evict_bit := Bool(false)
+      this.rs_new_bit := false.B
+      this.rs_evict_bit := false.B
    }
 }
 

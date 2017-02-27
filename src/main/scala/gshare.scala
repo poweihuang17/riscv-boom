@@ -82,7 +82,7 @@ class GShareBrPredictor(
    io.resp.bits.info    := resp_info.asUInt()
 
    // Always overrule the BTB, which will almost certainly have less history.
-   io.resp.valid := Bool(true) && !this.disable_bpd
+   io.resp.valid := true.B && !this.disable_bpd
 
    //------------------------------------------------------------
    // Update counter table.
@@ -94,7 +94,7 @@ class GShareBrPredictor(
    counters.io.update.bits.executed         := this.commit.bits.ctrl.executed
    counters.io.update.bits.takens           := this.commit.bits.ctrl.taken
    counters.io.update.bits.was_mispredicted := this.commit.bits.ctrl.mispredicted.reduce(_|_)
-   counters.io.update.bits.do_initialize    := Bool(false)
+   counters.io.update.bits.do_initialize    := false.B
 
    //------------------------------------------------------------
 }

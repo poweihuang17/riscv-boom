@@ -66,7 +66,7 @@ class RegisterRead(
    val rrd_valids       = Wire(Vec(issue_width, Bool()))
    val rrd_uops         = Wire(Vec(issue_width, new MicroOp()))
 
-   val exe_reg_valids   = Reg(init = Vec.fill(issue_width) { Bool(false) })
+   val exe_reg_valids   = Reg(init = Vec.fill(issue_width) { false.B })
    val exe_reg_uops     = Reg(Vec(issue_width, new MicroOp()))
    val exe_reg_rs1_data = Reg(Vec(issue_width, Bits(width = register_width)))
    val exe_reg_rs2_data = Reg(Vec(issue_width, Bits(width = register_width)))
@@ -114,12 +114,12 @@ class RegisterRead(
       if (num_read_ports > 1) rrd_rs2_data(w) := io.rf_read_ports(idx+1).data
       if (num_read_ports > 2) rrd_rs3_data(w) := io.rf_read_ports(idx+2).data
 
-      val rrd_kill = Mux(io.kill, Bool(true),
+      val rrd_kill = Mux(io.kill, true.B,
                      Mux(io.brinfo.valid && io.brinfo.mispredict
                                        , maskMatch(rrd_uops(w).br_mask, io.brinfo.mask)
-                                       , Bool(false)))
+                                       , false.B))
 
-      exe_reg_valids(w) := Mux(rrd_kill, Bool(false), rrd_valids(w))
+      exe_reg_valids(w) := Mux(rrd_kill, false.B, rrd_valids(w))
       // TODO use only the valids signal, don't require us to set nullUop
       exe_reg_uops(w)   := Mux(rrd_kill, NullMicroOp, rrd_uops(w))
 
@@ -145,8 +145,8 @@ class RegisterRead(
    for (w <- 0 until issue_width)
    {
       val num_read_ports = num_read_ports_array(w)
-      var rs1_cases = Array((Bool(false), Bits(0, register_width)))
-      var rs2_cases = Array((Bool(false), Bits(0, register_width)))
+      var rs1_cases = Array((false.B, Bits(0, register_width)))
+      var rs2_cases = Array((false.B, Bits(0, register_width)))
 
       val pop1       = rrd_uops(w).pop1
       val lrs1_rtype = rrd_uops(w).lrs1_rtype

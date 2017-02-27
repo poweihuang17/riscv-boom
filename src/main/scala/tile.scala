@@ -63,8 +63,8 @@ class BOOMTile(clockSignal: Clock = null, resetSignal: Bool = null)
       // status/sret signals for things such as lr/sc
       dcache.ptw.status <> ptw.io.requestor(1).status
       dcache.ptw.invalidate := ptw.io.requestor(1).invalidate
-      dcache.ptw.req.ready := Bool(false)
-      dcache.ptw.resp.valid := Bool(false)
+      dcache.ptw.req.ready := false.B
+      dcache.ptw.resp.valid := false.B
    }
 
    val dcArb = Module(new rocket.HellaCacheArbiter(dcPorts.size)(dcacheParams))

@@ -191,12 +191,12 @@ abstract class PipelinedFunctionalUnit(val num_stages: Int,
                                                               , has_branch_unit = is_branch_unit)(p)
 {
    // pipelined functional unit is always ready
-   io.req.ready := Bool(true)
+   io.req.ready := true.B
 
 
    if (num_stages > 0)
    {
-      val r_valids = Reg(init = Vec.fill(num_stages) { Bool(false) })
+      val r_valids = Reg(init = Vec.fill(num_stages) { false.B })
       val r_uops   = Reg(Vec(num_stages, new MicroOp()))
 
       // handle incoming request
@@ -298,14 +298,14 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
 
       // Did I just get killed by the previous cycle's branch,
       // or by a flush pipeline?
-      val killed = Wire(init=Bool(false))
+      val killed = Wire(init=false.B)
       when (io.req.bits.kill ||
             (io.brinfo.valid &&
                io.brinfo.mispredict &&
                maskMatch(io.brinfo.mask, io.req.bits.uop.br_mask)
             ))
       {
-         killed := Bool(true)
+         killed := true.B
       }
 
       val rs1 = io.req.bits.rs1_data
@@ -337,17 +337,17 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
                      (pc_sel =/= PC_PLUS4)
 
       // "mispredict" means that a branch has been resolved and it must be killed
-      val mispredict = Wire(Bool()); mispredict := Bool(false)
+      val mispredict = Wire(Bool()); mispredict := false.B
 
       val is_br          = io.req.valid && !killed && uop.is_br_or_jmp && !uop.is_jump
       val is_br_or_jalr  = io.req.valid && !killed && uop.is_br_or_jmp && !uop.is_jal
 
       // did the BTB predict a br or jmp incorrectly?
       // (do we need to reset its history and teach it a new target?)
-      val btb_mispredict = Wire(Bool()); btb_mispredict := Bool(false)
+      val btb_mispredict = Wire(Bool()); btb_mispredict := false.B
 
       // did the bpd predict incorrectly (aka, should we correct its prediction?)
-      val bpd_mispredict = Wire(Bool()); bpd_mispredict := Bool(false)
+      val bpd_mispredict = Wire(Bool()); bpd_mispredict := false.B
 
       // if b/j is taken, does it go to the wrong target?
       val wrong_taken_target = !io.get_rob_pc.next_val || (io.get_rob_pc.next_pc =/= bj_addr)
@@ -364,7 +364,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
                               !io.get_pred.info.btb_resp.taken ||
                               !uop.br_prediction.btb_hit ||
                               io.status.debug // fun hack to perform fence.i on JALRs in debug mode
-            bpd_mispredict := Bool(false)
+            bpd_mispredict := false.B
          }
          when (pc_sel === PC_PLUS4)
          {
@@ -456,7 +456,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
       else
       {
          br_unit.btb_update_valid := is_br_or_jalr && mispredict && uop.is_jump
-         br_unit.bht_update.valid := Bool(false)
+         br_unit.bht_update.valid := false.B
       }
 
       br_unit.btb_update.pc               := fetch_pc // tell the BTB which pc to tag check against
@@ -495,7 +495,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
       }
 
       // is the br_pc the last instruction in the fetch bundle?
-      val is_last_inst = if (FETCH_WIDTH == 1) { Bool(true) }
+      val is_last_inst = if (FETCH_WIDTH == 1) { true.B }
                          else { ((uop_pc_ >> UInt(log2Up(coreInstBytes))) &
                                  Fill(log2Up(FETCH_WIDTH), UInt(1))) === UInt(FETCH_WIDTH-1) }
       br_unit.bpd_update.bits.new_pc_same_packet := !(is_taken) && !is_last_inst
@@ -543,7 +543,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
 //   reg_data := alu.io.out
 //   io.resp.bits.data := reg_data
 
-   val r_val  = Reg(init = Vec.fill(num_stages) { Bool(false) })
+   val r_val  = Reg(init = Vec.fill(num_stages) { false.B })
    val r_data = Reg(Vec(num_stages, UInt(width=xLen)))
    r_val (0) := io.req.valid
    r_data(0) := alu.io.out
@@ -567,7 +567,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
    }
 
    // Exceptions
-   io.resp.bits.fflags.valid := Bool(false)
+   io.resp.bits.fflags.valid := false.B
 }
 
 
@@ -601,7 +601,7 @@ class MemAddrCalcUnit(implicit p: Parameters) extends PipelinedFunctionalUnit(nu
    if (data_width > 63)
    {
       assert (!(io.req.valid && io.req.bits.uop.ctrl.is_std &&
-         io.resp.bits.data(64).toBool === Bool(true)), "65th bit set in MemAddrCalcUnit.")
+         io.resp.bits.data(64).toBool === true.B), "65th bit set in MemAddrCalcUnit.")
    }
 
    // Handle misaligned exceptions

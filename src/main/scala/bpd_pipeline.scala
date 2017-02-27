@@ -148,7 +148,7 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
    br_predictor.io.flush := io.flush
    br_predictor.io.status_prv := io.status_prv
 
-//   val bpd_valid = br_predictor.io.resp.valid && (io.status_prv === UInt(rocket.PRV.U) || !Bool(ENABLE_BPD_UMODE_ONLY))
+//   val bpd_valid = br_predictor.io.resp.valid && (io.status_prv === UInt(rocket.PRV.U) || !ENABLE_BPD_UMODE_ONLY.B)
    val bpd_valid = br_predictor.io.resp.valid
    val bpd_bits = br_predictor.io.resp.bits
 
@@ -222,21 +222,21 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
 
    // bpd will make a redirection request (either for a br or jal)
    // for "taking" a branch or JAL.
-   val bpd_br_fire = Wire(init = Bool(false))
-   val bpd_jal_fire = Wire(init = Bool(false))
+   val bpd_br_fire = Wire(init = false.B)
+   val bpd_jal_fire = Wire(init = false.B)
    // If the BTB predicted taken, and the BPD disagrees and believes no branch
    // is taken, we must instead redirect the FrontEnd to fetch the "next packet"
    // in program order (PC+4-ish, if you will).
-   val bpd_nextline_fire = Wire(init = Bool(false))
+   val bpd_nextline_fire = Wire(init = false.B)
    val nextline_pc = aligned_pc + UInt(fetch_width*coreInstBytes)
    // BTB provides a suggested "valid instruction" mask, based on its prediction.
    // Should we override its mask?
-   val override_btb = Wire(init = Bool(false))
+   val override_btb = Wire(init = false.B)
 
    // Is the predicted instruction a control-flow instruction?
    // Used to invalidate BTB entries due to it predicting on
    // a non-branch/non-jump instruction.
-   val is_cfi = Wire(init = Bool(true))
+   val is_cfi = Wire(init = true.B)
 
    // does the index match on a true bit in the mask?
    def IsIdxAMatch(idx: UInt, mask: UInt) : Bool =
@@ -329,8 +329,8 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
             // The BTB may actually predict things that aren't branches!
             // But we must undo these "mispredictions"!
             //printf ("[bpd_pipeline] BTB resp is valid, but didn't detect what it predicted.")
-            override_btb := Bool(true)
-            is_cfi := Bool(false)
+            override_btb := true.B
+            is_cfi := false.B
 
             // but is there a branch or jump we need to handle? Or just fetch the nextline?
             bpd_br_fire  := bpd_br_beats_jal && bpd_br_taken
@@ -398,7 +398,7 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
       io.predictions(w).btb_predicted := io.btb_resp.valid &&
                                           !(bpd_nextline_fire || bpd_br_fire || bpd_jal_fire)
       io.predictions(w).btb_hit := Mux(io.btb_resp.bits.bridx === UInt(w),
-                                          io.btb_resp.valid, Bool(false))
+                                          io.btb_resp.valid, false.B)
       io.predictions(w).bpd_predict_val   := bpd_valid
    }
 

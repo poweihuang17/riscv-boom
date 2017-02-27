@@ -88,7 +88,7 @@ abstract class ExecutionUnit(val num_rf_read_ports: Int
    val io = IO(new ExecutionUnitIO(num_rf_read_ports, num_rf_write_ports
                                  , num_bypass_stages, data_width))
 
-   io.resp.map(_.bits.fflags.valid := Bool(false))
+   io.resp.map(_.bits.fflags.valid := false.B)
 
    // TODO add "number of fflag ports", so we can properly account for FPU+Mem combinations
    def numBypassPorts: Int = num_bypass_stages
@@ -146,20 +146,20 @@ class ALUExeUnit(
    else if (has_div) println ("       - Div")
    if (has_fdiv) println ("       - FDiv/FSqrt")
 
-   val muldiv_busy = Wire(init=Bool(false))
-   val fdiv_busy = Wire(init=Bool(false))
+   val muldiv_busy = Wire(init=false.B)
+   val fdiv_busy = Wire(init=false.B)
 
    // The Functional Units --------------------
    val fu_units = ArrayBuffer[FunctionalUnit]()
 
    io.fu_types := FU_ALU |
-                  Mux(Bool(has_fpu), FU_FPU, Bits(0)) |
-                  Mux(Bool(has_mul && !use_slow_mul), FU_MUL, Bits(0)) |
-                  (Mux(!muldiv_busy && Bool(has_mul && use_slow_mul), FU_MUL, Bits(0))) |
-                  (Mux(!muldiv_busy && Bool(has_div), FU_DIV, Bits(0))) |
-                  (Mux(Bool(shares_csr_wport), FU_CSR, Bits(0))) |
-                  (Mux(Bool(is_branch_unit), FU_BRU, Bits(0))) |
-                  Mux(!fdiv_busy && Bool(has_fdiv), FU_FDV, Bits(0))
+                  Mux(has_fpu.B, FU_FPU, Bits(0)) |
+                  Mux((has_mul && !use_slow_mul).B, FU_MUL, Bits(0)) |
+                  (Mux(!muldiv_busy && (has_mul && use_slow_mul).B, FU_MUL, Bits(0))) |
+                  (Mux(!muldiv_busy && has_div.B, FU_DIV, Bits(0))) |
+                  (Mux(shares_csr_wport.B, FU_CSR, Bits(0))) |
+                  (Mux(is_branch_unit.B, FU_BRU, Bits(0))) |
+                  Mux(!fdiv_busy && has_fdiv.B, FU_FDV, Bits(0))
 
 
    // ALU Unit -------------------------------
@@ -184,7 +184,7 @@ class ALUExeUnit(
    }
    else
    {
-      io.br_unit.brinfo.valid := Bool(false)
+      io.br_unit.brinfo.valid := false.B
    }
    fu_units += alu
 
@@ -205,9 +205,9 @@ class ALUExeUnit(
 
    // FPU Unit -----------------------
    var fpu: FPUUnit = null
-   val fpu_resp_val = Wire(init=Bool(false))
+   val fpu_resp_val = Wire(init=false.B)
    val fpu_resp_fflags = Wire(new ValidIO(new FFlagsResp()))
-   fpu_resp_fflags.valid := Bool(false)
+   fpu_resp_fflags.valid := false.B
    if (has_fpu)
    {
       fpu = Module(new FPUUnit())
@@ -231,11 +231,11 @@ class ALUExeUnit(
 
    // FDiv/FSqrt Unit -----------------------
    var fdivsqrt: FDivSqrtUnit = null
-   val fdiv_resp_val = Wire(init=Bool(false))
+   val fdiv_resp_val = Wire(init=false.B)
    val fdiv_resp_uop = Wire(new MicroOp())
    val fdiv_resp_data = Wire(Bits(width=65))
    val fdiv_resp_fflags = Wire(new ValidIO(new FFlagsResp()))
-   fdiv_resp_fflags.valid := Bool(false)
+   fdiv_resp_fflags.valid := false.B
    if (has_fdiv)
    {
       fdivsqrt = Module(new FDivSqrtUnit())
@@ -263,13 +263,13 @@ class ALUExeUnit(
    // Mul/Div/Rem Unit -----------------------
    var muldiv: MulDivUnit = null
    val muldiv_resp_val = Wire(Bool())
-   muldiv_resp_val := Bool(false)
+   muldiv_resp_val := false.B
    if (has_muldiv)
    {
       muldiv = Module(new MulDivUnit())
       muldiv.io.req.valid           := io.req.valid &&
-                                       ((io.req.bits.uop.fu_code_is(FU_DIV) && Bool(has_div)) ||
-                                        (io.req.bits.uop.fu_code_is(FU_MUL) && Bool(has_mul && use_slow_mul)))
+                                       ((io.req.bits.uop.fu_code_is(FU_DIV) && has_div.B) ||
+                                        (io.req.bits.uop.fu_code_is(FU_MUL) && (has_mul && use_slow_mul).B))
       muldiv.io.req.bits.uop        := io.req.bits.uop
       muldiv.io.req.bits.rs1_data   := io.req.bits.rs1_data
       muldiv.io.req.bits.rs2_data   := io.req.bits.rs2_data
@@ -282,7 +282,7 @@ class ALUExeUnit(
       muldiv_resp_val := muldiv.io.resp.valid
       muldiv_busy := !muldiv.io.req.ready ||
                      (io.req.valid && (io.req.bits.uop.fu_code_is(FU_DIV) ||
-                                      (io.req.bits.uop.fu_code_is(FU_MUL) && Bool(has_mul && use_slow_mul))))
+                                      (io.req.bits.uop.fu_code_is(FU_MUL) && (has_mul && use_slow_mul).B)))
       fu_units += muldiv
    }
 
@@ -394,7 +394,7 @@ class MemExeUnit(implicit p: Parameters) extends ExecutionUnit(num_rf_read_ports
 //   assert (!(io.com_exception && lsu.io.memreq_uop.is_load && lsu.io.memreq_val),
 //      "[execute] a valid load is returning while an exception is being thrown.")
    io.dmem.req.valid     := Mux(io.com_exception && lsu.io.memreq_uop.is_load,
-                              Bool(false),
+                              false.B,
                               lsu.io.memreq_val)
    io.dmem.req.bits.addr  := lsu.io.memreq_addr
    io.dmem.req.bits.data  := lsu.io.memreq_wdata
@@ -403,7 +403,7 @@ class MemExeUnit(implicit p: Parameters) extends ExecutionUnit(num_rf_read_ports
 
    // I should be timing forwarding to coincide with dmem resps, so I'm not clobbering
    //anything....
-   val memresp_val    = Mux(io.com_exception && io.dmem.resp.bits.uop.is_load, Bool(false),
+   val memresp_val    = Mux(io.com_exception && io.dmem.resp.bits.uop.is_load, false.B,
                                                 lsu.io.forward_val || io.dmem.resp.valid)
    val memresp_rf_wen = (io.dmem.resp.valid && (io.dmem.resp.bits.uop.mem_cmd === M_XRD || io.dmem.resp.bits.uop.is_amo)) ||  // TODO should I refactor this to use is_load?
                            lsu.io.forward_val
@@ -491,13 +491,13 @@ class ALUMemExeUnit(
    val fdiv_busy = Wire(Bool())
    io.fu_types := FU_ALU |
                   FU_MEM |
-                  Mux(Bool(has_fpu), FU_FPU, Bits(0)) |
-                  (Mux(Bool(has_mul && !use_slow_mul), FU_MUL, Bits(0))) |
-                  (Mux(!muldiv_busy && Bool(use_slow_mul), FU_MUL, Bits(0))) |
-                  (Mux(!muldiv_busy && Bool(has_div), FU_DIV, Bits(0))) |
-                  (Mux(Bool(shares_csr_wport), FU_CSR, Bits(0))) |
-                  Mux(Bool(is_branch_unit), FU_BRU, Bits(0)) |
-                  Mux(!fdiv_busy && Bool(has_fdiv), FU_FDV, Bits(0))
+                  Mux(has_fpu.B, FU_FPU, Bits(0)) |
+                  (Mux((has_mul && !use_slow_mul).B, FU_MUL, Bits(0))) |
+                  (Mux(!muldiv_busy && use_slow_mul.B, FU_MUL, Bits(0))) |
+                  (Mux(!muldiv_busy && has_div.B, FU_DIV, Bits(0))) |
+                  (Mux(shares_csr_wport.B, FU_CSR, Bits(0))) |
+                  Mux(is_branch_unit.B, FU_BRU, Bits(0)) |
+                  Mux(!fdiv_busy && has_fdiv.B, FU_FDV, Bits(0))
 
 
    val memresp_val = Wire(Bool())
@@ -527,7 +527,7 @@ class ALUMemExeUnit(
    }
    else
    {
-      io.br_unit.brinfo.valid := Bool(false)
+      io.br_unit.brinfo.valid := false.B
    }
 
    // Pipelined, IMul Unit -----------------------
@@ -535,7 +535,7 @@ class ALUMemExeUnit(
    if (!use_slow_mul)
    {
       imul = Module(new PipelinedMulUnit(IMUL_STAGES))
-      imul.io.req.valid := io.req.valid && (io.req.bits.uop.fu_code_is(FU_MUL) && Bool(!use_slow_mul))
+      imul.io.req.valid := io.req.valid && (io.req.bits.uop.fu_code_is(FU_MUL) && (!use_slow_mul).B)
       imul.io.req.bits.uop      := io.req.bits.uop
       imul.io.req.bits.rs1_data := io.req.bits.rs1_data
       imul.io.req.bits.rs2_data := io.req.bits.rs2_data
@@ -589,15 +589,15 @@ class ALUMemExeUnit(
    val muldiv_resp_val = Wire(Bool())
    val muldiv_resp_uop = Wire(new MicroOp())
    val muldiv_resp_data = Wire(Bits(width=64))
-   muldiv_resp_val := Bool(false)
-   muldiv_busy := Bool(false)
+   muldiv_resp_val := false.B
+   muldiv_busy := false.B
    if (has_div || (has_mul && use_slow_mul))
    {
       muldiv = Module(new MulDivUnit())
 
       muldiv.io.req.valid           := io.req.valid &&
-                                       ((io.req.bits.uop.fu_code_is(FU_DIV) && Bool(has_div)) ||
-                                       (io.req.bits.uop.fu_code_is(FU_MUL) && Bool(has_mul && use_slow_mul)))
+                                       ((io.req.bits.uop.fu_code_is(FU_DIV) && has_div.B) ||
+                                       (io.req.bits.uop.fu_code_is(FU_MUL) && (has_mul && use_slow_mul).B))
       muldiv.io.req.bits.uop        := io.req.bits.uop
       muldiv.io.req.bits.rs1_data   := io.req.bits.rs1_data
       muldiv.io.req.bits.rs2_data   := io.req.bits.rs2_data
@@ -612,7 +612,7 @@ class ALUMemExeUnit(
       muldiv_resp_data:= muldiv.io.resp.bits.data
       muldiv_busy := !muldiv.io.req.ready ||
                      (io.req.valid && (io.req.bits.uop.fu_code_is(FU_DIV) ||
-                                      (io.req.bits.uop.fu_code_is(FU_MUL) && Bool(has_mul && use_slow_mul))))
+                                      (io.req.bits.uop.fu_code_is(FU_MUL) && (has_mul && use_slow_mul).B)))
    }
 
 
@@ -621,9 +621,9 @@ class ALUMemExeUnit(
    val fdiv_resp_uop = Wire(new MicroOp())
    val fdiv_resp_data = Wire(Bits(width=65))
    val fdiv_resp_fflags = Wire(new ValidIO(new FFlagsResp()))
-   fdiv_resp_val := Bool(false)
-   fdiv_resp_fflags.valid := Bool(false)
-   fdiv_busy := Bool(false)
+   fdiv_resp_val := false.B
+   fdiv_resp_fflags.valid := false.B
+   fdiv_busy := false.B
    if (has_fdiv)
    {
       fdivsqrt = Module(new FDivSqrtUnit())
@@ -689,7 +689,7 @@ class ALUMemExeUnit(
    lsu.io.dmem_req_ready := io.dmem.req.ready
    lsu.io.dmem_is_ordered:= io.dmem.ordered
 
-   io.dmem.req.valid     := Mux(io.com_exception && lsu.io.memreq_uop.is_load, Bool(false),
+   io.dmem.req.valid     := Mux(io.com_exception && lsu.io.memreq_uop.is_load, false.B,
                                                                               lsu.io.memreq_val)
    io.dmem.req.bits.addr  := lsu.io.memreq_addr
    io.dmem.req.bits.data  := lsu.io.memreq_wdata
@@ -697,7 +697,7 @@ class ALUMemExeUnit(
    io.dmem.req.bits.kill  := lsu.io.memreq_kill // load kill request sent to memory
 
    // I'm timing forwarding to coincide with dmem resps, so I'm not clobbering anything...
-   memresp_val := Mux(io.com_exception && io.dmem.resp.bits.uop.is_load, Bool(false),
+   memresp_val := Mux(io.com_exception && io.dmem.resp.bits.uop.is_load, false.B,
                                                lsu.io.forward_val || io.dmem.resp.valid)
 
 

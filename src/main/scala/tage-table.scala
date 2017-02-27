@@ -47,7 +47,7 @@ class TageTableIo(
    val allocate = Flipped(new ValidIO(new TageAllocateEntryInfo(fetch_width, index_sz, tag_sz, history_length)))
    def AllocateNewEntry(idx: UInt, tag: UInt, executed: UInt, taken: UInt, debug_pc: UInt, debug_hist_ptr: UInt) =
    {
-      this.allocate.valid := Bool(true)
+      this.allocate.valid := true.B
       this.allocate.bits.index := idx
       this.allocate.bits.tag :=tag
       this.allocate.bits.executed :=executed
@@ -60,7 +60,7 @@ class TageTableIo(
    val update_counters = Flipped(new ValidIO(new TageUpdateCountersInfo(fetch_width, index_sz)))
    def UpdateCounters(idx: UInt, executed: UInt, taken: UInt, mispredicted: Bool) =
    {
-      this.update_counters.valid := Bool(true)
+      this.update_counters.valid := true.B
       this.update_counters.bits.index := idx
       this.update_counters.bits.executed := executed
       this.update_counters.bits.taken := taken
@@ -71,7 +71,7 @@ class TageTableIo(
    val update_usefulness = Flipped(new ValidIO(new TageUpdateUsefulInfo(index_sz)))
    def UpdateUsefulness(idx: UInt, inc: Bool) =
    {
-      this.update_usefulness.valid := Bool(true)
+      this.update_usefulness.valid := true.B
       this.update_usefulness.bits.index := idx
       this.update_usefulness.bits.inc := inc
    }
@@ -88,7 +88,7 @@ class TageTableIo(
    val degrade_usefulness_valid = Input(Bool())
    def DegradeUsefulness(dummy: Int=0) =
    {
-      this.degrade_usefulness_valid := Bool(true)
+      this.degrade_usefulness_valid := true.B
    }
 
    // BP2 - speculatively update the spec copy of the CSRs (branch history registers)
@@ -104,9 +104,9 @@ class TageTableIo(
 
    def InitializeIo(dummy: Int=0) =
    {
-      this.allocate.valid := Bool(false)
-      this.update_counters.valid := Bool(false)
-      this.update_usefulness.valid := Bool(false)
+      this.allocate.valid := false.B
+      this.update_counters.valid := false.B
+      this.update_usefulness.valid := false.B
       this.allocate.bits.index := UInt(0)
       this.allocate.bits.tag := UInt(0)
       this.allocate.bits.executed := UInt(0)
@@ -116,11 +116,11 @@ class TageTableIo(
       this.update_counters.bits.index := UInt(0)
       this.update_counters.bits.executed := UInt(0)
       this.update_counters.bits.taken := UInt(0)
-      this.update_counters.bits.mispredicted := Bool(false)
+      this.update_counters.bits.mispredicted := false.B
       this.update_usefulness.bits.index := UInt(0)
-      this.update_usefulness.bits.inc := Bool(false)
+      this.update_usefulness.bits.inc := false.B
       this.usefulness_req_idx := UInt(0)
-      this.degrade_usefulness_valid := Bool(false)
+      this.degrade_usefulness_valid := false.B
    }
 
    override def cloneType: this.type = new TageTableIo(
@@ -329,9 +329,9 @@ class TageTable(
 
    when (io.flush)
    {
-      idx_csr.io.rollback (commit_idx_csr.io.value , and_shift=Bool(false))
-      tag_csr1.io.rollback(commit_tag_csr1.io.value, and_shift=Bool(false))
-      tag_csr2.io.rollback(commit_tag_csr2.io.value, and_shift=Bool(false))
+      idx_csr.io.rollback (commit_idx_csr.io.value , and_shift=false.B)
+      tag_csr1.io.rollback(commit_tag_csr1.io.value, and_shift=false.B)
+      tag_csr2.io.rollback(commit_tag_csr2.io.value, and_shift=false.B)
    }
    .elsewhen (io.br_resolution.valid && io.br_resolution.bits.mispredict)
    {
@@ -346,9 +346,9 @@ class TageTable(
       val new_bit = io.br_resolution.bits.taken
       val evict_bit = resp_info.evict_bits(id)
 
-      idx_csr.io.rollback (resp_info.idx_csr (id), and_shift=Bool(true), new_bit, evict_bit)
-      tag_csr1.io.rollback(resp_info.tag_csr1(id), and_shift=Bool(true), new_bit, evict_bit)
-      tag_csr2.io.rollback(resp_info.tag_csr2(id), and_shift=Bool(true), new_bit, evict_bit)
+      idx_csr.io.rollback (resp_info.idx_csr (id), and_shift=true.B, new_bit, evict_bit)
+      tag_csr1.io.rollback(resp_info.tag_csr1(id), and_shift=true.B, new_bit, evict_bit)
+      tag_csr2.io.rollback(resp_info.tag_csr2(id), and_shift=true.B, new_bit, evict_bit)
    }
    .elsewhen (io.bp2_update_history.valid)
    {
@@ -389,12 +389,12 @@ class TageTable(
       ubit_table.io.allocate(a_idx)
       tag_table.io.write(a_idx, io.allocate.bits.tag(tag_sz-1,0))
 
-      counter_table.io.update.valid                 := Bool(true)
+      counter_table.io.update.valid                 := true.B
       counter_table.io.update.bits.index            := a_idx
       counter_table.io.update.bits.executed         := io.allocate.bits.executed.toBools
-      counter_table.io.update.bits.was_mispredicted := Bool(true)
+      counter_table.io.update.bits.was_mispredicted := true.B
       counter_table.io.update.bits.takens           := io.allocate.bits.taken.toBools
-      counter_table.io.update.bits.do_initialize    := Bool(true)
+      counter_table.io.update.bits.do_initialize    := true.B
 
       debug_pc_table(a_idx) := io.allocate.bits.debug_pc
       debug_hist_ptr_table(a_idx) := io.allocate.bits.debug_hist_ptr(history_length-1,0)
@@ -403,12 +403,12 @@ class TageTable(
    }
    .elsewhen (io.update_counters.valid)
    {
-      counter_table.io.update.valid                 := Bool(true)
+      counter_table.io.update.valid                 := true.B
       counter_table.io.update.bits.index            := io.update_counters.bits.index
       counter_table.io.update.bits.executed         := io.update_counters.bits.executed.toBools
       counter_table.io.update.bits.was_mispredicted := io.update_counters.bits.mispredicted
       counter_table.io.update.bits.takens           := io.update_counters.bits.taken.toBools
-      counter_table.io.update.bits.do_initialize    := Bool(false)
+      counter_table.io.update.bits.do_initialize    := false.B
    }
 
    when (io.update_usefulness.valid)

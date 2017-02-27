@@ -157,7 +157,7 @@ abstract class BrPredictor(fetch_width: Int, val history_length: Int)(implicit p
    val r_vlh = new VeryLongHistoryRegister(history_length, VLHR_LENGTH)
 
    val in_usermode = io.status_prv === UInt(rocket.PRV.U)
-   val disable_bpd = in_usermode && Bool(ENABLE_BPD_UMODE_ONLY)
+   val disable_bpd = in_usermode && ENABLE_BPD_UMODE_ONLY.B
 
    val ghistory_all =
       r_ghistory.value(
@@ -214,7 +214,7 @@ abstract class BrPredictor(fetch_width: Int, val history_length: Int)(implicit p
       io.br_resolution.valid,
       io.br_resolution.bits,
       io.flush,
-      disable = Bool(false),
+      disable = false.B,
       umode_only = false)
 
    r_ghistory_u.update(
@@ -232,7 +232,7 @@ abstract class BrPredictor(fetch_width: Int, val history_length: Int)(implicit p
       io.br_resolution.valid,
       io.br_resolution.bits,
       io.flush,
-      disable = Bool(false))
+      disable = false.B)
 
 
    io.resp.bits.history match
@@ -498,7 +498,7 @@ class NullBrPredictor(
    )(implicit p: Parameters) extends BrPredictor(fetch_width, history_length)(p)
 {
    println ("\tBuilding (0 kB) Null Predictor (never predict).")
-   io.resp.valid := Bool(false)
+   io.resp.valid := false.B
 }
 
 //------------------------------------------------------------------------------
@@ -523,9 +523,9 @@ class RandomBrPredictor(
    )(implicit p: Parameters) extends BrPredictor(fetch_width, history_length = 1)(p)
 {
    println ("\tBuilding Random Branch Predictor.")
-   private val rand_val = Reg(init = Bool(false))
+   private val rand_val = Reg(init = false.B)
    rand_val := ~rand_val
-   private var lfsr= LFSR16(Bool(true))
+   private var lfsr= LFSR16(true.B)
    def rand(width: Int) = {
         lfsr = lfsr(lfsr.getWidth-1,1)
         val mod = (1 << width) - 1
@@ -649,7 +649,7 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
    {
       head_ptr := WrapInc(head_ptr, num_entries)
 
-      assert (entries_ctrl(head_ptr).debug_executed === Bool(true),
+      assert (entries_ctrl(head_ptr).debug_executed === true.B,
          "[BROB] Committing an entry with no executed branches or jalrs.")
       assert (head_ptr === io.backend.deallocate.bits.brob_idx ,
          "[BROB] Committing wrong entry.")
@@ -660,7 +660,7 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
       val idx = GetIdx(r_bpd_update.bits.br_pc)
       entries_ctrl(r_bpd_update.bits.brob_idx).executed(idx) := r_bpd_update.bits.is_br
       entries_ctrl(r_bpd_update.bits.brob_idx).taken(idx) := r_bpd_update.bits.taken
-      entries_ctrl(r_bpd_update.bits.brob_idx).debug_executed := Bool(true)
+      entries_ctrl(r_bpd_update.bits.brob_idx).debug_executed := true.B
       // update the predictor on either mispredicts or tag misses
       entries_ctrl(r_bpd_update.bits.brob_idx).mispredicted(idx) :=
          r_bpd_update.bits.is_br &&
@@ -674,8 +674,8 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
          {
             when (UInt(w) > idx)
             {
-               entries_ctrl(r_bpd_update.bits.brob_idx).executed(w) := Bool(false)
-               entries_ctrl(r_bpd_update.bits.brob_idx).mispredicted(w) := Bool(false)
+               entries_ctrl(r_bpd_update.bits.brob_idx).executed(w) := false.B
+               entries_ctrl(r_bpd_update.bits.brob_idx).mispredicted(w) := false.B
             }
          }
 

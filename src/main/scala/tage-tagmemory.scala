@@ -45,14 +45,14 @@ class TageTagMemory(
       val w_data = Input(UInt(memwidth.W))
       def write(idx: UInt, data: UInt) =
       {
-         this.w_en := Bool(true)
+         this.w_en := true.B
          this.w_idx := idx
          this.w_data := data
       }
 
       def InitializeIo(dummy: Int=0) =
       {
-         this.w_en := Bool(false)
+         this.w_en := false.B
          this.w_idx := UInt(0)
          this.w_data := UInt(0)
       }

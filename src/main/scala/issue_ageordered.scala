@@ -68,7 +68,7 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
    val uops = issue_slots.map(s=>s.updated_uop) ++ dis_uops.map(s=>s)
    for (i <- 0 until num_issue_slots)
    {
-      issue_slots(i).in_uop.valid := Bool(false)
+      issue_slots(i).in_uop.valid := false.B
       issue_slots(i).in_uop.bits  := uops(i+1)
       for (j <- 1 to MAX_SHIFT by 1)
       {
@@ -102,7 +102,7 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
    // set default
    for (w <- 0 until issue_width)
    {
-      io.iss_valids(w) := Bool(false)
+      io.iss_valids(w) := false.B
       io.iss_uops(w)   := NullMicroOp
       // unsure if this is overkill
       io.iss_uops(w).pop1 := UInt(0)
@@ -116,13 +116,13 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
    val port_issued = Array.fill(issue_width){Bool()}
    for (w <- 0 until issue_width)
    {
-      port_issued(w) = Bool(false)
+      port_issued(w) = false.B
    }
 
    for (i <- 0 until num_issue_slots)
    {
-      issue_slots(i).grant := Bool(false)
-      var uop_issued = Bool(false)
+      issue_slots(i).grant := false.B
+      var uop_issued = false.B
 
       for (w <- 0 until issue_width)
       {
@@ -130,8 +130,8 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
 
          when (requests(i) && !uop_issued && can_allocate && !port_issued(w))
          {
-            issue_slots(i).grant := Bool(true)
-            io.iss_valids(w) := Bool(true)
+            issue_slots(i).grant := true.B
+            io.iss_valids(w) := true.B
             io.iss_uops(w) := issue_slots(i).uop
          }
          val was_port_issued_yet = port_issued(w)

@@ -257,7 +257,7 @@ class GSkewBrPredictor(fetch_width: Int,
    resp_info.meta       := meta_out
    io.resp.bits.info := resp_info.asUInt
    // Always overrule the BTB, which will almost certainly have less history.
-   io.resp.valid := Bool(true)
+   io.resp.valid := true.B
 
    require (coreInstBytes == 4)
 
@@ -270,22 +270,22 @@ class GSkewBrPredictor(fetch_width: Int,
    val gsh0_update_valids = Wire(Vec(fetch_width, Bool()))
    val gsh1_update_valids = Wire(Vec(fetch_width, Bool()))
    val meta_update_valids = Wire(Vec(fetch_width, Bool()))
-   bimo_update_valids.map(_ := Bool(false))
-   gsh0_update_valids.map(_ := Bool(false))
-   gsh1_update_valids.map(_ := Bool(false))
-   meta_update_valids.map(_ := Bool(false))
+   bimo_update_valids.map(_ := false.B)
+   gsh0_update_valids.map(_ := false.B)
+   gsh1_update_valids.map(_ := false.B)
+   meta_update_valids.map(_ := false.B)
 
    val bimo_update_mispredicted = Wire(Vec(fetch_width, Bool()))
    val gsh0_update_mispredicted = Wire(Vec(fetch_width, Bool()))
    val gsh1_update_mispredicted = Wire(Vec(fetch_width, Bool()))
    val meta_update_mispredicted = Wire(Vec(fetch_width, Bool()))
-   bimo_update_mispredicted.map(_ := Bool(false))
-   gsh0_update_mispredicted.map(_ := Bool(false))
-   gsh1_update_mispredicted.map(_ := Bool(false))
-   meta_update_mispredicted.map(_ := Bool(false))
+   bimo_update_mispredicted.map(_ := false.B)
+   gsh0_update_mispredicted.map(_ := false.B)
+   gsh1_update_mispredicted.map(_ := false.B)
+   meta_update_mispredicted.map(_ := false.B)
 
    val meta_update_dir = Wire(Vec(fetch_width, Bool()))
-   meta_update_dir.map(_ := Bool(false))
+   meta_update_dir.map(_ := false.B)
 
    val com_info = new GSkewResp(
       fetch_width, bimo_idx_sz, gsh0_idx_sz, gsh1_idx_sz, meta_idx_sz).fromBits(commit.bits.info.info)
@@ -302,7 +302,7 @@ class GSkewBrPredictor(fetch_width: Int,
    val bim_mispredicted  = commit.bits.ctrl.taken.asUInt ^ com_info.bimo
    val g0_mispredicted   = commit.bits.ctrl.taken.asUInt ^ com_info.gsh0
    val g1_mispredicted   = commit.bits.ctrl.taken.asUInt ^ com_info.gsh1
-   val meta_mispredicted = Wire(init = Bool(false))
+   val meta_mispredicted = Wire(init = false.B)
 
    when (commit.valid && commit.bits.ctrl.executed.reduce(_|_))
    {
@@ -317,20 +317,20 @@ class GSkewBrPredictor(fetch_width: Int,
             .elsewhen (correct && !both_agree(i))
             {
                // strengthen meta
-               meta_update_valids(i) := Bool(true)
+               meta_update_valids(i) := true.B
                meta_update_dir(i) := com_info.meta(i)
 
                // strengthen only those that gave correct predictions.
-               when (!bim_mispredicted(i)) { bimo_update_valids(i) := Bool(true) }
-               when (!g0_mispredicted(i))  { gsh0_update_valids(i) := Bool(true) }
-               when (!g1_mispredicted(i))  { gsh1_update_valids(i) := Bool(true) }
+               when (!bim_mispredicted(i)) { bimo_update_valids(i) := true.B }
+               when (!g0_mispredicted(i))  { gsh0_update_valids(i) := true.B }
+               when (!g1_mispredicted(i))  { gsh1_update_valids(i) := true.B }
             }
             .elsewhen (!correct && !both_agree(i))
             {
                // 1. update meta to choose differently
-               meta_update_valids(i) := Bool(true)
+               meta_update_valids(i) := true.B
                meta_update_dir(i) := !com_info.meta(i)
-               meta_mispredicted := Bool(true)
+               meta_mispredicted := true.B
 
                // 2. check new prediction...
                //    - strengthen participating if correct
@@ -347,13 +347,13 @@ class GSkewBrPredictor(fetch_width: Int,
                {
                   when (new_meta)
                   {
-                     bimo_update_valids(i) := Bool(true)
-                     gsh0_update_valids(i) := Bool(true)
-                     gsh1_update_valids(i) := Bool(true)
+                     bimo_update_valids(i) := true.B
+                     gsh0_update_valids(i) := true.B
+                     gsh1_update_valids(i) := true.B
                   }
                   .otherwise
                   {
-                     bimo_update_valids(i) := Bool(true)
+                     bimo_update_valids(i) := true.B
                   }
 
                }
@@ -363,9 +363,9 @@ class GSkewBrPredictor(fetch_width: Int,
                // !correct && both agree
 
                // update all of the things
-               bimo_update_valids(i) := Bool(true)
-               gsh0_update_valids(i) := Bool(true)
-               gsh1_update_valids(i) := Bool(true)
+               bimo_update_valids(i) := true.B
+               gsh0_update_valids(i) := true.B
+               gsh1_update_valids(i) := true.B
             }
          }
          else
@@ -374,16 +374,16 @@ class GSkewBrPredictor(fetch_width: Int,
             when (correct)
             {
                // strengthen only those that gave correct predictions.
-               when (!bim_mispredicted(i)) { bimo_update_valids(i) := Bool(true) }
-               when (!g0_mispredicted(i))  { gsh0_update_valids(i) := Bool(true) }
-               when (!g1_mispredicted(i))  { gsh1_update_valids(i) := Bool(true) }
+               when (!bim_mispredicted(i)) { bimo_update_valids(i) := true.B }
+               when (!g0_mispredicted(i))  { gsh0_update_valids(i) := true.B }
+               when (!g1_mispredicted(i))  { gsh1_update_valids(i) := true.B }
             }
             .otherwise
             {
                // update all of the things
-               bimo_update_valids(i) := Bool(true)
-               gsh0_update_valids(i) := Bool(true)
-               gsh1_update_valids(i) := Bool(true)
+               bimo_update_valids(i) := true.B
+               gsh0_update_valids(i) := true.B
+               gsh1_update_valids(i) := true.B
             }
          }
       }
@@ -404,7 +404,7 @@ class GSkewBrPredictor(fetch_width: Int,
    }
    else
    {
-      meta_table.io.update.valid          := Bool(false)
+      meta_table.io.update.valid          := false.B
    }
 
    bimo_table.io.update.bits.was_mispredicted := bim_mispredicted.orR
@@ -427,10 +427,10 @@ class GSkewBrPredictor(fetch_width: Int,
    gsh1_table.io.update.bits.takens    := commit.bits.ctrl.taken
    meta_table.io.update.bits.takens    := meta_update_dir
 
-   bimo_table.io.update.bits.do_initialize := Bool(false)
-   gsh0_table.io.update.bits.do_initialize := Bool(false)
-   gsh1_table.io.update.bits.do_initialize := Bool(false)
-   meta_table.io.update.bits.do_initialize := Bool(false)
+   bimo_table.io.update.bits.do_initialize := false.B
+   gsh0_table.io.update.bits.do_initialize := false.B
+   gsh1_table.io.update.bits.do_initialize := false.B
+   meta_table.io.update.bits.do_initialize := false.B
 
    //------------------------------------------------------------
 }

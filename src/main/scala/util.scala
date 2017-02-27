@@ -209,9 +209,9 @@ object DebugIsJALR
    def apply(inst: UInt): Bool =
    {
       // TODO Chisel not sure why this won't compile
-//      val is_jalr = rocket.DecodeLogic(inst, List(Bool(false)),
+//      val is_jalr = rocket.DecodeLogic(inst, List(false.B),
 //                                       Array(
-//                                       JALR -> Bool(true)))
+//                                       JALR -> true.B))
       inst(6,0) === UInt("b1100111")
    }
 }
@@ -226,14 +226,14 @@ object DebugGetBJImm
       // TODO Chisel not sure why this won't compile
       //val csignals =
       //rocket.DecodeLogic(inst,
-      //                    List(Bool(false), Bool(false)),
+      //                    List(false.B, false.B),
       //      Array(
-      //         BEQ     -> List(Bool(true ), Bool(false)),
-      //         BNE     -> List(Bool(true ), Bool(false)),
-      //         BGE     -> List(Bool(true ), Bool(false)),
-      //         BGEU    -> List(Bool(true ), Bool(false)),
-      //         BLT     -> List(Bool(true ), Bool(false)),
-      //         BLTU    -> List(Bool(true ), Bool(false))
+      //         BEQ     -> List(true.B, false.B),
+      //         BNE     -> List(true.B, false.B),
+      //         BGE     -> List(true.B, false.B),
+      //         BGEU    -> List(true.B, false.B),
+      //         BLT     -> List(true.B, false.B),
+      //         BLTU    -> List(true.B, false.B)
       //      ))
       //val is_br :: nothing :: Nil = csignals
 

@@ -54,33 +54,33 @@ class LoadReqSlot(implicit p: Parameters) extends BoomModule()(p)
 {
    val io = IO(new LoadReqSlotIo())
 
-   val valid      = Reg(init=Bool(false))
-   val was_killed = Reg(init=Bool(false))
+   val valid      = Reg(init=false.B)
+   val was_killed = Reg(init=false.B)
    val uop        = Reg(outType=(new MicroOp()))
 
    // did the existing uop get killed by a branch?
    val br_killed = Wire(Bool())
-   br_killed := Bool(false)
+   br_killed := false.B
    // Note: we need to check/clr br_mask for incoming uop, despite previous MAddr
    // unit will have already performed that for us, the LSU waking up loads may not have.
    val br_killed_incoming = Wire(Bool())
-   br_killed_incoming := Bool(false)
+   br_killed_incoming := false.B
 
    // only allow the clearing of a valid entry
    // otherwise we might overwrite an incoming entry
    when (io.clear && valid)
    {
-      valid      := Bool(false)
+      valid      := false.B
    }
    .elsewhen (io.wen)
    {
-      valid      := Bool(true)
+      valid      := true.B
       was_killed := io.flush_pipe || br_killed_incoming
       uop        := io.in_uop
    }
    .elsewhen (io.flush_pipe || br_killed)
    {
-      was_killed := Bool(true)
+      was_killed := true.B
    }
 
    val bmask_match = io.brinfo.valid && maskMatch(io.brinfo.mask, uop.br_mask)
@@ -102,11 +102,11 @@ class LoadReqSlot(implicit p: Parameters) extends BoomModule()(p)
    {
       when (bmask_match)
       {
-         br_killed := Bool(true)
+         br_killed := true.B
       }
       when (bmask_match_incoming)
       {
-         br_killed_incoming := Bool(true)
+         br_killed_incoming := true.B
       }
    }
 
@@ -233,12 +233,12 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
    }
 
    // ready logic (is there a inflight buffer slot that's not valid yet?)
-   enq_rdy := Bool(false)
+   enq_rdy := false.B
    for (i <- 0 until max_num_inflight)
    {
       when (!inflight_load_buffer(i).valid && io.dmem.req.ready)
       {
-         enq_rdy := Bool(true)
+         enq_rdy := true.B
       }
    }
 
@@ -282,7 +282,7 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
 //      prefetcher.io.core_requests.bits.addr := Reg(next=Reg(next=io.core.req.bits.addr))
 //      prefetcher.io.core_requests.bits.miss := Reg(next=Reg(next=io.core.req.valid)) &&
 //                                               nbdcache.io.cpu.resp.bits.miss
-//      prefetcher.io.core_requests.bits.secondary_miss := Bool(false)
+//      prefetcher.io.core_requests.bits.secondary_miss := false.B
 ////                                                         Reg(next=Reg(next=io.core.req.valid)) &&
 ////                                                         nbdcache.io.cpu.resp.bits.miss &&
 ////                                                         nbdcache.io.cpu.resp.bits.secondary_miss
@@ -293,8 +293,8 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
    //------------------------------------------------------------
    // hook up requests
 
-//   val prefetch_req_val = prefetcher.io.cache.req.valid && Bool(ENABLE_PREFETCHING)
-   val prefetch_req_val = Bool(false)
+//   val prefetch_req_val = prefetcher.io.cache.req.valid && ENABLE_PREFETCHING.B
+   val prefetch_req_val = false.B
 
    io.core.req.ready      := enq_rdy && io.dmem.req.ready
    io.dmem.req.valid      := (io.core.req.valid || prefetch_req_val)
@@ -304,7 +304,7 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
    io.dmem.req.bits.cmd   := Mux(io.core.req.valid, io.core.req.bits.uop.mem_cmd, M_PFW)
    io.dmem.s1_data        := Reg(next=io.core.req.bits.data) //notice this is delayed a cycle!
    io.dmem.s1_kill        := io.core.req.bits.kill || iflb_kill // kills request sent out last cycle
-   io.dmem.req.bits.phys  := Bool(true) // we always use physical addresses here,
+   io.dmem.req.bits.phys  := true.B // we always use physical addresses here,
                                         // as we've already done our own translations.
 
    //------------------------------------------------------------
@@ -323,8 +323,8 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
    io.core.resp.valid := Mux(cache_load_ack,
                            !inflight_load_buffer(resp_tag).was_killed, // hide loads that were killed
                          Mux(was_store_and_not_amo && !io.dmem.s2_nack && !Reg(next=io.core.req.bits.kill),
-                           Bool(true),    // stores succeed quietly, so valid if no nack
-                           Bool(false)))  // filter out nacked responses
+                           true.B,    // stores succeed quietly, so valid if no nack
+                           false.B))  // filter out nacked responses
 
    io.core.resp.bits.uop := Mux(cache_load_ack, inflight_load_buffer(resp_tag).out_uop, m2_req_uop)
 

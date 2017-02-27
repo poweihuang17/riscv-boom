@@ -38,7 +38,7 @@ abstract class TageUbitMemory(
       val allocate_idx = Input(UInt(index_sz.W))
       def allocate(idx: UInt) =
       {
-         this.allocate_valid := Bool(true)
+         this.allocate_valid := true.B
          this.allocate_idx := idx
       }
 
@@ -47,7 +47,7 @@ abstract class TageUbitMemory(
       val update_inc = Input(Bool())
       def update(idx: UInt, inc: Bool) =
       {
-         this.update_valid  := Bool(true)
+         this.update_valid  := true.B
          this.update_idx := idx
          this.update_inc := inc
       }
@@ -55,7 +55,7 @@ abstract class TageUbitMemory(
       val degrade_valid = Input(Bool())
       def degrade(dummy: Int=0) =
       {
-         this.degrade_valid := Bool(true)
+         this.degrade_valid := true.B
       }
 
       // Degrading may take many cycles. Tell the tage-table if we are degrading.
@@ -67,13 +67,13 @@ abstract class TageUbitMemory(
 
       def InitializeIo(dummy: Int=0) =
       {
-         this.allocate_valid := Bool(false)
+         this.allocate_valid := false.B
          this.allocate_idx := UInt(0)
-         this.update_valid := Bool(false)
+         this.update_valid := false.B
          this.update_idx := UInt(0)
-         this.update_inc := Bool(false)
-         this.degrade_valid := Bool(false)
-         this.is_degrading := Bool(false)
+         this.update_inc := false.B
+         this.degrade_valid := false.B
+         this.is_degrading := false.B
       }
    })
 
@@ -105,7 +105,7 @@ class TageUbitMemorySeqMem(
 
    // maintain an async copy purely for assertions
    val debug_ubit_table = Mem(num_entries, UInt(width = ubit_sz))
-   val debug_valids     = Reg(init=Vec.fill(num_entries){Bool(false)})
+   val debug_valids     = Reg(init=Vec.fill(num_entries){false.B})
 
    //------------------------------------------------------------
    // Manage clearing u-bits over time
@@ -124,7 +124,7 @@ class TageUbitMemorySeqMem(
 
    // TODO add a read_enable (only reads on commit.valid within TAGE).
    // But must add assert that allocate/update is always following a Reg(read-enable).
-   val s2_out = RegNext(ubit_table.read(io.s0_read_idx, Bool(true)))
+   val s2_out = RegNext(ubit_table.read(io.s0_read_idx, true.B))
    io.s2_is_useful := s2_out =/= UInt(0) || s2_bypass_useful
 
    // TODO: missing the bypassing in cycle1.
@@ -181,7 +181,7 @@ class TageUbitMemorySeqMem(
 
    when (io.allocate_valid)
    {
-      debug_valids(io.allocate_idx) := Bool(true)
+      debug_valids(io.allocate_idx) := true.B
    }
 
    when (io.update_valid)
@@ -214,7 +214,7 @@ class TageUbitMemoryFlipFlop(
    val ubit_table       = Reg(UInt(width=num_entries))
 
    val debug_ubit_table = Mem(num_entries, UInt(width = ubit_sz))
-   val debug_valids     = Reg(init=Vec.fill(num_entries){Bool(false)})
+   val debug_valids     = Reg(init=Vec.fill(num_entries){false.B})
 
    //------------------------------------------------------------
 
@@ -254,7 +254,7 @@ class TageUbitMemoryFlipFlop(
    {
       ubit_table := ubit_table.bitSet(waddr, wdata.toBool)
       debug_ubit_table(waddr) := wdata
-      debug_valids(waddr) := Bool(true)
+      debug_valids(waddr) := true.B
    }
    require (ubit_sz == 1)
    require (wdata.getWidth == 1)

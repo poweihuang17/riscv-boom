@@ -62,9 +62,9 @@ class IssueSlot(num_slow_wakeup_ports: Int)(implicit p: Parameters) extends Boom
    val next_p3  = Wire(Bool())
 
    val slot_state    = Reg(init = s_invalid)
-   val slot_p1       = Reg(init = Bool(false), next = next_p1)
-   val slot_p2       = Reg(init = Bool(false), next = next_p2)
-   val slot_p3       = Reg(init = Bool(false), next = next_p3)
+   val slot_p1       = Reg(init = false.B, next = next_p1)
+   val slot_p2       = Reg(init = false.B, next = next_p2)
+   val slot_p3       = Reg(init = false.B, next = next_p3)
    val slot_is_2uops = Reg(Bool())
 
    val slotUop = Reg(init = NullMicroOp)
@@ -130,9 +130,9 @@ class IssueSlot(num_slow_wakeup_ports: Int)(implicit p: Parameters) extends Boom
    }
 
    // Wakeup Compare Logic
-   next_p1 := Bool(false)
-   next_p2 := Bool(false)
-   next_p3 := Bool(false)
+   next_p1 := false.B
+   next_p2 := false.B
+   next_p3 := false.B
 
    // these signals are the "next_p*" for the current slot's micro-op.
    // they are important for shifting the current slotUop up to an other entry.
@@ -158,15 +158,15 @@ class IssueSlot(num_slow_wakeup_ports: Int)(implicit p: Parameters) extends Boom
    {
       when (io.wakeup_dsts(i).valid && (io.wakeup_dsts(i).bits === slotUop.pop1))
       {
-         out_p1 := Bool(true)
+         out_p1 := true.B
       }
       when (io.wakeup_dsts(i).valid && (io.wakeup_dsts(i).bits === slotUop.pop2))
       {
-         out_p2 := Bool(true)
+         out_p2 := true.B
       }
       when (io.wakeup_dsts(i).valid && (io.wakeup_dsts(i).bits === slotUop.pop3))
       {
-         out_p3 := Bool(true)
+         out_p3 := true.B
       }
    }
 
@@ -191,7 +191,7 @@ class IssueSlot(num_slow_wakeup_ports: Int)(implicit p: Parameters) extends Boom
    io.request := isValid && slot_p1 && slot_p2 && slot_p3 && !io.kill
    val high_priority = slotUop.is_br_or_jmp
    io.request_hp := io.request && high_priority
-//   io.request_hp := Bool(false)
+//   io.request_hp := false.B
 
    when (slot_state === s_valid_1)
    {
@@ -203,7 +203,7 @@ class IssueSlot(num_slow_wakeup_ports: Int)(implicit p: Parameters) extends Boom
    }
    .otherwise
    {
-      io.request := Bool(false)
+      io.request := false.B
    }
 
 

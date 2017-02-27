@@ -30,9 +30,9 @@ class UOPCodeFPUDecoder extends Module
   })
 
    // TODO change N,Y,X to BitPat("b1"), BitPat("b0"), and BitPat("b?")
-   val N = Bool(false)
-   val Y = Bool(true)
-   val X = Bool(false)
+   val N = false.B
+   val Y = true.B
+   val X = false.B
 
    val default: List[BitPat] = List(FCMD_X,    X,X,X,X,X, X,X,X,X,X,X,X, X,X,X,X)
 
