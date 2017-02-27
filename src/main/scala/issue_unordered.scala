@@ -24,7 +24,7 @@ class IssueUnitStatic(num_issue_slots: Int, issue_width: Int, num_wakeup_ports: 
    //-------------------------------------------------------------
    // Issue Table
 
-   val entry_wen_oh  = Vec.fill(num_issue_slots){ Wire(Bits(width=DISPATCH_WIDTH)) }
+   val entry_wen_oh  = Vec.fill(num_issue_slots){ Wire(Bits(DISPATCH_WIDTH.W)) }
    for (i <- 0 until num_issue_slots)
    {
       issue_slots(i).in_uop.valid := entry_wen_oh(i).orR

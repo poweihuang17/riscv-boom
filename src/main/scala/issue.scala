@@ -31,7 +31,7 @@ class IssueUnitIO(issue_width: Int, num_wakeup_ports: Int)(implicit p: Parameter
    val wakeup_pdsts   = Vec(num_wakeup_ports, Valid(UInt(PREG_SZ.W))).asInput
 
    // tell the issue unit what each execution pipeline has in terms of functional units
-   val fu_types       = Vec(issue_width, Bits(width=FUC_SZ)).asInput
+   val fu_types       = Vec(issue_width, Bits(FUC_SZ.W)).asInput
 
    val brinfo         = new BrResolutionInfo().asInput
    val flush_pipeline = Input(Bool())

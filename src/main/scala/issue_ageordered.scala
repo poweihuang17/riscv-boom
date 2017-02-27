@@ -28,17 +28,17 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
    // Figure out how much to shift entries by
 
    val MAX_SHIFT = DISPATCH_WIDTH
-   val shamt_oh = Array.fill(num_issue_slots){UInt(width=issue_width)}
+   val shamt_oh = Array.fill(num_issue_slots){UInt(issue_width.W)}
    // count total grants before this entry, and tus how many to shift upwards by
-   val shamt = Array.fill(num_issue_slots){UInt(width=log2Up(issue_width+1))}
+   val shamt = Array.fill(num_issue_slots){UInt(log2Up(issue_width+1).W)}
 
 
    val vacants = issue_slots.map(s => !(s.valid)) ++ io.dis_valids.map(!_.toBool)
-   val shamts_oh = Array.fill(num_issue_slots+DISPATCH_WIDTH) {Wire(UInt(width=MAX_SHIFT))}
+   val shamts_oh = Array.fill(num_issue_slots+DISPATCH_WIDTH) {Wire(UInt(MAX_SHIFT.W))}
    // track how many to shift up this entry by by counting previous vacant spots
    def SaturatingCounterOH(count_oh:UInt, inc: Bool, max: Int): UInt =
    {
-      val next = Wire(UInt(width=max))
+      val next = Wire(UInt(max.W))
       next := count_oh
       when (count_oh === UInt(0) && inc)
       {

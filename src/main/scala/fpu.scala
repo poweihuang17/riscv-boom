@@ -121,10 +121,10 @@ class UOPCodeFPUDecoder extends Module
 class FpuReq()(implicit p: Parameters) extends BoomBundle()(p)
 {
    val uop      = new MicroOp()
-   val rs1_data = Bits(width = 65)
-   val rs2_data = Bits(width = 65)
-   val rs3_data = Bits(width = 65)
-   val fcsr_rm  = Bits(width = rocket.FPConstants.RM_SZ)
+   val rs1_data = Bits(65.W)
+   val rs2_data = Bits(65.W)
+   val rs3_data = Bits(65.W)
+   val fcsr_rm  = Bits(rocket.FPConstants.RM_SZ.W)
 }
 
 class FPU(implicit p: Parameters) extends BoomModule()(p)

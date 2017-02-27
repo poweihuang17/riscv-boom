@@ -61,7 +61,7 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
    })
 
    val fseq_reg = Reg(init = UInt(0, xLen))
-   val if_pc_next = Wire(UInt(width = vaddrBits+1))
+   val if_pc_next = Wire(UInt((vaddrBits+1).W))
 
    val br_unit = io.br_unit
 

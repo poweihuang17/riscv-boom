@@ -30,9 +30,9 @@ import _root_.util.Str
 
 class RedirectRequest(fetch_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val target  = UInt(width = vaddrBits+1)
-   val br_pc   = UInt(width = vaddrBits+1) // PC of the instruction changing control flow (to update the BTB with jumps)
-   val idx     = UInt(width = log2Up(fetch_width)) // idx of br in fetch bundle (to mask out the appropriate fetch
+   val target  = UInt((vaddrBits+1).W)
+   val br_pc   = UInt((vaddrBits+1).W) // PC of the instruction changing control flow (to update the BTB with jumps)
+   val idx     = UInt(log2Up(fetch_width).W) // idx of br in fetch bundle (to mask out the appropriate fetch
                                                    // instructions)
    val is_jump = Bool() // (only valid if redirect request is valid)
    val is_cfi  = Bool() // Is redirect due to a control-flow instruction?
@@ -53,7 +53,7 @@ class BranchPredictionResp(implicit p: Parameters) extends BoomBundle()(p)
    val bpd_resp       = new BpdResp
 
    // used to tell front-end how to mask off instructions
-   val mask           = Bits(width = fetchWidth)
+   val mask           = Bits(fetchWidth.W)
    val br_seen        = Bool() // was a branch seen in this fetch packet?
 }
 
@@ -168,8 +168,8 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
    val is_br     = Wire(Vec(fetch_width, Bool()))
    val is_jal    = Wire(Vec(fetch_width, Bool()))
    val is_jr     = Wire(Vec(fetch_width, Bool()))
-   val br_targs  = Wire(Vec(fetch_width, UInt(width=vaddrBits+1)))
-   val jal_targs = Wire(Vec(fetch_width, UInt(width=vaddrBits+1)))
+   val br_targs  = Wire(Vec(fetch_width, UInt((vaddrBits+1).W)))
+   val jal_targs = Wire(Vec(fetch_width, UInt((vaddrBits+1).W)))
 
    for (i <- 0 until fetch_width)
    {
@@ -367,7 +367,7 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
 
    private def KillMask(m_enable: Bool, m_idx: UInt, m_width: Int): UInt =
    {
-      val mask = Wire(Bits(width = m_width))
+      val mask = Wire(Bits(m_width.W))
       mask := Fill(m_width, m_enable) & (Fill(m_width, UInt(1)) << UInt(1) << m_idx)
       mask
    }

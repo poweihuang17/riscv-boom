@@ -47,7 +47,7 @@ import chisel3.util._
 
 class UpdateEntry(fetch_width: Int, index_sz: Int) extends Bundle
 {
-   val index            = UInt(width = index_sz)
+   val index            = UInt(index_sz.W)
    val executed         = Vec(fetch_width, Bool())
    val takens           = Vec(fetch_width, Bool())
    // Was there a misprediction? If yes, we need to read the h-tables.
@@ -62,9 +62,9 @@ class UpdateEntry(fetch_width: Int, index_sz: Int) extends Bundle
 
 class BrTableUpdate(fetch_width: Int, index_sz: Int) extends Bundle
 {
-   val index      = UInt(width = index_sz)
-   val executed   = UInt(width = fetch_width) // which words in the fetch packet does the update correspond to?
-   val new_value  = UInt(width = fetch_width)
+   val index      = UInt(index_sz.W)
+   val executed   = UInt(fetch_width.W) // which words in the fetch packet does the update correspond to?
+   val new_value  = UInt(fetch_width.W)
 
    override def cloneType: this.type = new BrTableUpdate(fetch_width, index_sz).asInstanceOf[this.type]
 }

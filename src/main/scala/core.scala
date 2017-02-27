@@ -448,7 +448,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    //-------------------------------------------------------------
 
    // TODO get rid of, let the ROB handle this...?
-   val dis_curr_rob_row_idx = Wire(UInt(width = ROB_ADDR_SZ))
+   val dis_curr_rob_row_idx = Wire(UInt(ROB_ADDR_SZ.W))
 
    for (w <- 0 until DECODE_WIDTH)
    {

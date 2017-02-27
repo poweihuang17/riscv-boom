@@ -36,7 +36,7 @@ case class SimpleGShareParameters(
 
 class SimpleGShareResp(index_sz: Int) extends Bundle
 {
-   val index = UInt(width = index_sz) // needed to update predictor at Commit
+   val index = UInt(index_sz.W) // needed to update predictor at Commit
    override def cloneType: this.type = new SimpleGShareResp(index_sz).asInstanceOf[this.type]
 }
 
@@ -85,7 +85,7 @@ class SimpleGShareBrPredictor(
       enables: Vec[Bool],
       takens: Vec[Bool]): Vec[UInt] =
    {
-      val updated_row = Wire(Vec(fetch_width, UInt(width=CNTR_SZ)))
+      val updated_row = Wire(Vec(fetch_width, UInt(CNTR_SZ.W)))
       for (i <- 0 until fetch_width)
       {
          updated_row(i) := counter_row(i)
@@ -108,7 +108,7 @@ class SimpleGShareBrPredictor(
    // state
 
    // CNTR_SZ-bit counters, one counter per instruction in the fetch packet
-   val counters = Mem(num_entries, Vec(fetch_width, UInt(width=CNTR_SZ)))
+   val counters = Mem(num_entries, Vec(fetch_width, UInt(CNTR_SZ.W)))
 
    //------------------------------------------------------------
    // get prediction (delay response 2 cycles to match fetch pipeline)

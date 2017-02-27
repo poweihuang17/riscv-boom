@@ -60,7 +60,7 @@ class TageTagMemory(
 
    //------------------------------------------------------------
 
-   val smem = SeqMem(num_entries, UInt(width = memwidth))
+   val smem = SeqMem(num_entries, UInt(memwidth.W))
 
    //------------------------------------------------------------
 

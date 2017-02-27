@@ -70,23 +70,23 @@ class TageResp(
    extends Bundle
 {
    val provider_hit = Bool() // did tage make a prediction?
-   val provider_id = UInt(width = 5) // which table is providing the prediction?
-   val provider_predicted_takens = UInt(width = fetch_width)
+   val provider_id = UInt(5.W) // which table is providing the prediction?
+   val provider_predicted_takens = UInt(fetch_width.W)
    val alt_hit = Bool()  // an alternate table made a prediction too
-   val alt_id = UInt(width = 5)  // which table is the alternative?
-   val alt_predicted_takens = UInt(width = fetch_width)
+   val alt_id = UInt(5.W)  // which table is the alternative?
+   val alt_predicted_takens = UInt(fetch_width.W)
 
-   val indexes  = Vec(num_tables, UInt(width = max_index_sz)) // needed to update predictor at Commit
-   val tags     = Vec(num_tables, UInt(width = max_tag_sz))   // needed to update predictor at Commit
+   val indexes  = Vec(num_tables, UInt(max_index_sz.W)) // needed to update predictor at Commit
+   val tags     = Vec(num_tables, UInt(max_tag_sz.W))   // needed to update predictor at Commit
    val evict_bits = Vec(num_tables, Bool())                   // needed to update predictor on branch misprediction
 
-   val idx_csr  = Vec(num_tables, UInt(width = max_index_sz)) // needed to perform rollback
-   val tag_csr1 = Vec(num_tables, UInt(width = max_tag_sz))   // needed to perform rollback
-   val tag_csr2 = Vec(num_tables, UInt(width = max_tag_sz-1)) // needed to perform rollback
+   val idx_csr  = Vec(num_tables, UInt(max_index_sz.W)) // needed to perform rollback
+   val tag_csr1 = Vec(num_tables, UInt(max_tag_sz.W))   // needed to perform rollback
+   val tag_csr2 = Vec(num_tables, UInt((max_tag_sz-1).W)) // needed to perform rollback
 
 
-   val debug_history_ptr = UInt(width = max_history_length) // stored in snapshots (dealloc after Execute)
-   val debug_br_pc = UInt(width=64)
+   val debug_history_ptr = UInt(max_history_length.W) // stored in snapshots (dealloc after Execute)
+   val debug_br_pc = UInt(64.W)
 
    override def cloneType: this.type =
       new TageResp(

@@ -44,28 +44,28 @@ class CtrlSigs extends Bundle
    val legal           = Bool()
    val fp_val          = Bool()
    val fp_single       = Bool()
-   val uopc            = UInt(width = UOPC_SZ)
-   val fu_code         = UInt(width = FUC_SZ)
-   val dst_type        = UInt(width=2)
-   val rs1_type        = UInt(width=2)
-   val rs2_type        = UInt(width=2)
+   val uopc            = UInt(UOPC_SZ.W)
+   val fu_code         = UInt(FUC_SZ.W)
+   val dst_type        = UInt(2.W)
+   val rs1_type        = UInt(2.W)
+   val rs2_type        = UInt(2.W)
    val frs3_en         = Bool()
-   val imm_sel         = UInt(width = IS_X.getWidth)
+   val imm_sel         = UInt(IS_X.getWidth.W)
    val is_load         = Bool()
    val is_store        = Bool()
    val is_amo          = Bool()
    val is_fence        = Bool()
    val is_fencei       = Bool()
-   val mem_cmd         = UInt(width = M_SZ)
-   val mem_typ         = UInt(width = rocket.MT_SZ)
-   val wakeup_delay    = UInt(width = 2)
+   val mem_cmd         = UInt(M_SZ.W)
+   val mem_typ         = UInt(rocket.MT_SZ.W)
+   val wakeup_delay    = UInt(2.W)
    val bypassable      = Bool()
    val br_or_jmp       = Bool()
    val is_jal          = Bool()
    val allocate_brtag  = Bool()
    val inst_unique     = Bool()
    val flush_on_commit = Bool()
-   val csr_cmd         = UInt(width = rocket.CSR.SZ)
+   val csr_cmd         = UInt(rocket.CSR.SZ.W)
    val rocc            = Bool()
 
    def decode(inst: UInt, table: Iterable[(BitPat, List[BitPat])]) = {
@@ -585,7 +585,7 @@ class FetchSerializerNtoM(implicit p: Parameters) extends BoomModule()(p)
 
 class DebugBranchMaskGenerationLogicIO(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val branch_mask = UInt(width = MAX_BR_COUNT)
+   val branch_mask = UInt(MAX_BR_COUNT.W)
 }
 
 class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) extends BoomModule()(p)
@@ -600,8 +600,8 @@ class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) exten
 
       // give out tag immediately (needed in rename)
       // mask can come later in the cycle
-      val br_tag    = Vec(pl_width, UInt(width=BR_TAG_SZ)).asOutput
-      val br_mask   = Vec(pl_width, UInt(width=MAX_BR_COUNT)).asOutput
+      val br_tag    = Vec(pl_width, UInt(BR_TAG_SZ.W)).asOutput
+      val br_mask   = Vec(pl_width, UInt(MAX_BR_COUNT.W)).asOutput
 
        // tell decoders the branch mask has filled up, but on the granularity
        // of an individual micro-op (so some micro-ops can go through)
@@ -619,7 +619,7 @@ class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) exten
    // Give out the branch tag to each branch micro-op
 
    var allocate_mask = branch_mask
-   val tag_masks = Wire(Vec(pl_width, UInt(width=MAX_BR_COUNT)))
+   val tag_masks = Wire(Vec(pl_width, UInt(MAX_BR_COUNT.W)))
 
    for (w <- 0 until pl_width)
    {
@@ -627,7 +627,7 @@ class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) exten
       io.is_full(w) := (allocate_mask === ~(UInt(0,MAX_BR_COUNT))) && io.is_branch(w)
 
       // find br_tag and compute next br_mask
-      val new_br_tag = Wire(UInt(width = BR_TAG_SZ))
+      val new_br_tag = Wire(UInt(BR_TAG_SZ.W))
       new_br_tag := UInt(0)
       tag_masks(w) := UInt(0)
 

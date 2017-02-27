@@ -143,7 +143,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
    // Load-Address Queue
    val laq_addr_val       = Reg(Vec(num_ld_entries, Bool()))
-   val laq_addr           = Mem(num_ld_entries, UInt(width=coreMaxAddrBits))
+   val laq_addr           = Mem(num_ld_entries, UInt(coreMaxAddrBits.W))
 
    val laq_allocated      = Reg(Vec(num_ld_entries, Bool())) // entry has been allocated
    val laq_is_virtual     = Reg(Vec(num_ld_entries, Bool())) // address in LAQ is a virtual address. There was a tlb_miss and a retry is required.
@@ -157,22 +157,22 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
 
    // track window of stores we depend on
-   val laq_st_dep_mask        = Reg(Vec(num_ld_entries, UInt(width = num_st_entries))) // list of stores we might depend (cleared when a store commits)
+   val laq_st_dep_mask        = Reg(Vec(num_ld_entries, UInt(num_st_entries.W))) // list of stores we might depend (cleared when a store commits)
    val laq_forwarded_std_val  = Reg(Vec(num_ld_entries, Bool()))
-   val laq_forwarded_stq_idx  = Reg(Vec(num_ld_entries, UInt(width = MEM_ADDR_SZ)))    // which store did get store-load forwarded data from? compare later to see I got things correct
+   val laq_forwarded_stq_idx  = Reg(Vec(num_ld_entries, UInt(MEM_ADDR_SZ.W)))    // which store did get store-load forwarded data from? compare later to see I got things correct
    val debug_laq_put_to_sleep = Reg(Vec(num_ld_entries, Bool()))                       // did a load get put to sleep at least once?
-//   val laq_st_wait_mask = Vec.fill(num_ld_entries) { Reg() { Bits(width = num_st_entries) } }// TODO list of stores we might depend on whose addresses are not yet computed
+//   val laq_st_wait_mask = Vec.fill(num_ld_entries) { Reg() { Bits(num_st_entries.W) } }// TODO list of stores we might depend on whose addresses are not yet computed
 //   val laq_block_val    = Vec.fill(num_ld_entries) { Reg() { Bool() } }                     // TODO something is blocking us from executing
-//   val laq_block_id     = Vec.fill(num_ld_entries) { Reg() { UInt(width = MEM_ADDR_SZ) } }  // TODO something is blocking us from executing, listen for this ID to wakeup
+//   val laq_block_id     = Vec.fill(num_ld_entries) { Reg() { UInt(MEM_ADDR_SZ.W) } }  // TODO something is blocking us from executing, listen for this ID to wakeup
 
    // Store-Address Queue
    val saq_val       = Reg(Vec(num_st_entries, Bool()))
    val saq_is_virtual= Reg(Vec(num_st_entries, Bool())) // address in SAQ is a virtual address. There was a tlb_miss and a retry is required.
-   val saq_addr      = Mem(num_st_entries, UInt(width=coreMaxAddrBits))
+   val saq_addr      = Mem(num_st_entries, UInt(coreMaxAddrBits.W))
 
    // Store-Data Queue
    val sdq_val       = Reg(Vec(num_st_entries, Bool()))
-   val sdq_data      = Reg(Vec(num_st_entries, UInt(width = xLen)))
+   val sdq_data      = Reg(Vec(num_st_entries, UInt(xLen.W)))
 
    // Shared Store Queue Information
    val stq_uop       = Reg(Vec(num_st_entries, new MicroOp()))
@@ -587,8 +587,8 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
    // tell the ROB to clear the busy bit on the incoming store
    val clr_bsy_valid = Reg(init=false.B)
-   val clr_bsy_robidx = Reg(UInt(width=ROB_ADDR_SZ))
-   val clr_bsy_brmask = Reg(UInt(width=MAX_BR_COUNT))
+   val clr_bsy_robidx = Reg(UInt(ROB_ADDR_SZ.W))
+   val clr_bsy_brmask = Reg(UInt(MAX_BR_COUNT.W))
 
    clr_bsy_valid := false.B
    clr_bsy_robidx := mem_tlb_uop.rob_idx
@@ -1283,7 +1283,7 @@ object GenByteMask
 {
    def apply(addr: UInt, typ: UInt): UInt =
    {
-      val mask = Wire(UInt(width = 8))
+      val mask = Wire(UInt(8.W))
       mask := MuxCase(UInt(255,8), Array(
                    (typ === rocket.MT_B || typ === rocket.MT_BU) -> (UInt(1, 8) << addr(2,0)),
                    (typ === rocket.MT_H || typ === rocket.MT_HU) -> (UInt(3, 8) << (addr(2,1) << UInt(1))),

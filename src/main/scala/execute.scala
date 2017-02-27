@@ -29,7 +29,7 @@ import uncore.constants.MemoryOpConstants._
 class ExeUnitResp(data_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
    val uop = new MicroOp()
-   val data = Bits(width = data_width)
+   val data = Bits(data_width.W)
    val fflags = new ValidIO(new FFlagsResp) // write fflags to ROB
    override def cloneType: this.type = new ExeUnitResp(data_width).asInstanceOf[this.type]
 }
@@ -37,7 +37,7 @@ class ExeUnitResp(data_width: Int)(implicit p: Parameters) extends BoomBundle()(
 class FFlagsResp(implicit p: Parameters) extends BoomBundle()(p)
 {
    val uop = new MicroOp()
-   val flags = Bits(width=rocket.FPConstants.FLAGS_SZ)
+   val flags = Bits(rocket.FPConstants.FLAGS_SZ.W)
 }
 
 class ExecutionUnitIO(num_rf_read_ports: Int
@@ -233,7 +233,7 @@ class ALUExeUnit(
    var fdivsqrt: FDivSqrtUnit = null
    val fdiv_resp_val = Wire(init=false.B)
    val fdiv_resp_uop = Wire(new MicroOp())
-   val fdiv_resp_data = Wire(Bits(width=65))
+   val fdiv_resp_data = Wire(Bits(65.W))
    val fdiv_resp_fflags = Wire(new ValidIO(new FFlagsResp()))
    fdiv_resp_fflags.valid := false.B
    if (has_fdiv)
@@ -588,7 +588,7 @@ class ALUMemExeUnit(
    var muldiv: MulDivUnit = null
    val muldiv_resp_val = Wire(Bool())
    val muldiv_resp_uop = Wire(new MicroOp())
-   val muldiv_resp_data = Wire(Bits(width=64))
+   val muldiv_resp_data = Wire(Bits(64.W))
    muldiv_resp_val := false.B
    muldiv_busy := false.B
    if (has_div || (has_mul && use_slow_mul))
@@ -619,7 +619,7 @@ class ALUMemExeUnit(
    // FDiv/FSqrt Unit -----------------------
    var fdivsqrt: FDivSqrtUnit = null
    val fdiv_resp_uop = Wire(new MicroOp())
-   val fdiv_resp_data = Wire(Bits(width=65))
+   val fdiv_resp_data = Wire(Bits(65.W))
    val fdiv_resp_fflags = Wire(new ValidIO(new FFlagsResp()))
    fdiv_resp_val := false.B
    fdiv_resp_fflags.valid := false.B

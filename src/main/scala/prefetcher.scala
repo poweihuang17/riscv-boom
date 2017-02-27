@@ -28,7 +28,7 @@ import cde.Parameters
 // they missed or not
 class CoreRequest(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val addr = UInt(width = coreMaxAddrBits)
+   val addr = UInt(coreMaxAddrBits.W)
    val miss = Bool()           // was the access a miss in the cache?
    val secondary_miss = Bool() // was the access a secondary miss?
                                // (i.e., the cache is already servicing a miss
@@ -38,7 +38,7 @@ class CoreRequest(implicit p: Parameters) extends BoomBundle()(p)
 // this is our access port to the cache, where we put our prefetch requests into
 class CacheReq(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val addr = UInt(width = coreMaxAddrBits)
+   val addr = UInt(coreMaxAddrBits.W)
 }
 
 class CacheIO(implicit p: Parameters) extends BoomBundle()(p)

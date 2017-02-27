@@ -129,9 +129,9 @@ class TageTableIo(
 
 class TageTableResp(fetch_width: Int, history_length: Int, index_length: Int, tag_sz: Int) extends Bundle
 {
-   val takens  = UInt(width = fetch_width)  // the actual prediction
-   val index   = UInt(width = index_length) // the index of the prediction
-   val tag     = UInt(width = tag_sz)       // the tag we computed for the prediction
+   val takens  = UInt(fetch_width.W)  // the actual prediction
+   val index   = UInt(index_length.W) // the index of the prediction
+   val tag     = UInt(tag_sz.W)       // the tag we computed for the prediction
 
    // Instead of passing huge histories around, just pass around a CSR of the
    // folded history (circular shift register).
@@ -139,8 +139,8 @@ class TageTableResp(fetch_width: Int, history_length: Int, index_length: Int, ta
    // Two CSRs are used for the tags to manage the scenario of repeating history
    // with the frequency equal to the history_length (it would fold down to
    // 0x0).
-   val idx_csr  = UInt(width = index_length)
-   val tag_csr1 = UInt(width = tag_sz)
+   val idx_csr  = UInt(index_length.W)
+   val tag_csr1 = UInt(tag_sz.W)
    val tag_csr2 = UInt(width = tag_sz-1)
 
    override def cloneType: this.type = new TageTableResp(fetch_width, history_length, index_length, tag_sz).asInstanceOf[this.type]
@@ -148,33 +148,33 @@ class TageTableResp(fetch_width: Int, history_length: Int, index_length: Int, ta
 
 class TageIndex(index_sz: Int) extends Bundle
 {
-   val index = UInt(width = index_sz)
+   val index = UInt(index_sz.W)
    override def cloneType: this.type = new TageIndex(index_sz).asInstanceOf[this.type]
 }
 
 class TageUpdateUsefulInfo(index_sz: Int) extends Bundle
 {
-   val index = UInt(width = index_sz)
+   val index = UInt(index_sz.W)
    val inc = Bool()
    override def cloneType: this.type = new TageUpdateUsefulInfo(index_sz).asInstanceOf[this.type]
 }
 
 class TageAllocateEntryInfo(fetch_width: Int, index_sz: Int, tag_sz: Int, hist_sz: Int) extends Bundle //TageIndex(index_sz)
 {
-   val index = UInt(width = index_sz)
-   val tag = UInt(width = tag_sz)
-   val executed = UInt(width = fetch_width)
-   val taken = UInt(width = fetch_width)
-   val debug_pc = UInt(width = 32)
-   val debug_hist_ptr = UInt(width = hist_sz)
+   val index = UInt(index_sz.W)
+   val tag = UInt(tag_sz.W)
+   val executed = UInt(fetch_width.W)
+   val taken = UInt(fetch_width.W)
+   val debug_pc = UInt(32.W)
+   val debug_hist_ptr = UInt(hist_sz.W)
    override def cloneType: this.type = new TageAllocateEntryInfo(fetch_width, index_sz, tag_sz, hist_sz).asInstanceOf[this.type]
 }
 
 class TageUpdateCountersInfo(fetch_width: Int, index_sz: Int) extends Bundle //extends TageIndex(index_sz)
 {
-   val index = UInt(width = index_sz)
-   val executed = UInt(width = fetch_width)
-   val taken = UInt(width = fetch_width)
+   val index = UInt(index_sz.W)
+   val executed = UInt(fetch_width.W)
+   val taken = UInt(fetch_width.W)
    val mispredicted = Bool()
    override def cloneType: this.type = new TageUpdateCountersInfo(fetch_width, index_sz).asInstanceOf[this.type]
 }
@@ -231,7 +231,7 @@ class TageTable(
    val tag_table     = Module(new TageTagMemory(num_entries, memwidth = tag_sz))
    val ubit_table    = if (ubit_sz == 1) Module(new TageUbitMemoryFlipFlop(num_entries, ubit_sz))
                        else              Module(new TageUbitMemorySeqMem(num_entries, ubit_sz))
-   val debug_pc_table= Mem(num_entries, UInt(width = 32))
+   val debug_pc_table= Mem(num_entries, UInt(32.W))
    val debug_hist_ptr_table=Mem(num_entries,UInt(width = log2Up(VLHR_LENGTH)))
 
    //history ghistory

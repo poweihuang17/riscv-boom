@@ -29,7 +29,7 @@ case class GShareParameters(
 
 class GShareResp(index_sz: Int) extends Bundle
 {
-   val index = UInt(width = index_sz) // needed to update predictor at Commit
+   val index = UInt(index_sz.W) // needed to update predictor at Commit
    override def cloneType: this.type = new GShareResp(index_sz).asInstanceOf[this.type]
 }
 

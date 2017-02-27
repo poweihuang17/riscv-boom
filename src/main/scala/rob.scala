@@ -67,7 +67,7 @@ class RobIo(machine_width: Int
    // Track side-effects for debug purposes.
    // Also need to know when loads write back, whereas we don't need loads to unbusy.
    val debug_wb_valids  = Vec(num_wakeup_ports, Bool()).asInput
-   val debug_wb_wdata   = Vec(num_wakeup_ports, Bits(width=xLen)).asInput
+   val debug_wb_wdata   = Vec(num_wakeup_ports, Bits(xLen.W)).asInput
 
    val fflags = Flipped(Vec(num_fpu_ports, new ValidIO(new FFlagsResp())))
    val lxcpt = Flipped(new ValidIO(new Exception())) // LSU
@@ -215,7 +215,7 @@ class Rob(width: Int
    val rob_head_is_store   = Wire(Vec(width, Bool()))
    val rob_head_is_load    = Wire(Vec(width, Bool()))
    val rob_head_is_branch  = Wire(Vec(width, Bool()))
-   val rob_head_fflags     = Wire(Vec(width, Bits(width=rocket.FPConstants.FLAGS_SZ)))
+   val rob_head_fflags     = Wire(Vec(width, Bits(rocket.FPConstants.FLAGS_SZ.W)))
 
    // valid bits at the branch target
    // the br_unit needs to verify the target PC, but it must read out the valid bits
@@ -228,7 +228,7 @@ class Rob(width: Int
    // TODO compress xcpt cause size
    val r_xcpt_val       = Reg(init=false.B)
    val r_xcpt_uop       = Reg(new MicroOp())
-   val r_xcpt_badvaddr  = Reg(UInt(width=coreMaxAddrBits))
+   val r_xcpt_badvaddr  = Reg(UInt(coreMaxAddrBits.W))
 
    //--------------------------------------------------
    // Utility
@@ -309,7 +309,7 @@ class Rob(width: Int
    val r_partial_row = Reg(init = false.B)
 
    // TODO abstract out the "RobRowMetaData"
-   val row_metadata_brob_idx = Mem(num_rob_rows, UInt(width = BROB_ADDR_SZ))
+   val row_metadata_brob_idx = Mem(num_rob_rows, UInt(BROB_ADDR_SZ.W))
    val row_metadata_has_brorjalr= Mem(num_rob_rows, Bool())
    when (io.dis_valids.reduce(_|_) && io.dis_new_packet)
    {
@@ -354,7 +354,7 @@ class Rob(width: Int
                                                            // fake write ports - clearing on commit,
                                                            // rollback, branch_kill
       val rob_exception = Mem(num_rob_rows, Bool())
-      val rob_fflags    = Mem(num_rob_rows, Bits(width=rocket.FPConstants.FLAGS_SZ))
+      val rob_fflags    = Mem(num_rob_rows, Bits(rocket.FPConstants.FLAGS_SZ.W))
 
       //-----------------------------------------------
       // Dispatch: Add Entry to ROB
@@ -641,7 +641,7 @@ class Rob(width: Int
    // send fflags bits to the CSRFile to accrue
 
    val fflags_val = Wire(Vec(width, Bool()))
-   val fflags     = Wire(Vec(width, Bits(width=rocket.FPConstants.FLAGS_SZ)))
+   val fflags     = Wire(Vec(width, Bits(rocket.FPConstants.FLAGS_SZ.W)))
 
    for (w <- 0 until width)
    {
@@ -915,13 +915,13 @@ class Rob(width: Int
 
       // bank this so we only need 1 read port to handle branches, which read
       // row X and row X+1
-      val bank0 = Mem(ceil(num_rob_rows/2).toInt, UInt(width=pc_hob_width))
-      val bank1 = Mem(ceil(num_rob_rows/2).toInt, UInt(width=pc_hob_width))
+      val bank0 = Mem(ceil(num_rob_rows/2).toInt, UInt(pc_hob_width.W))
+      val bank1 = Mem(ceil(num_rob_rows/2).toInt, UInt(pc_hob_width.W))
 
       // takes rob_row_idx, returns PC (with low-order bits zeroed out)
       def  read (row_idx: UInt) =
       {
-         val rdata = Wire(Bits(width=xLen))
+         val rdata = Wire(Bits(xLen.W))
          rdata := bank0(row_idx >> UInt(1)) << UInt(pc_shift)
          // damn chisel demands a "default"
          when (row_idx(0))
@@ -940,8 +940,8 @@ class Rob(width: Int
          val data0 = bank0(addr0_ls1) << UInt(pc_shift)
          val data1 = bank1(row_idx >> UInt(1)) << UInt(pc_shift)
 
-         val curr_pc = Wire(UInt(width = xLen))
-         val next_pc = Wire(UInt(width = xLen))
+         val curr_pc = Wire(UInt(xLen.W))
+         val next_pc = Wire(UInt(xLen.W))
          curr_pc := Mux(row_idx(0), data1, data0)
          next_pc := Mux(row_idx(0), data0, data1)
          val curr_pc_ext = Sext(curr_pc(vaddrBits,0), xLen)

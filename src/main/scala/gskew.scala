@@ -43,15 +43,15 @@ case class GSkewParameters(
 class GSkewResp(fetch_width: Int, bi_idx_sz: Int, g0_idx_sz: Int, g1_idx_sz: Int, me_idx_sz: Int) extends Bundle
 {
    // needed to update predictor at Commit
-   val bimo_index = UInt(width = bi_idx_sz)
-   val gsh0_index = UInt(width = g0_idx_sz)
-   val gsh1_index = UInt(width = g1_idx_sz)
-   val meta_index = UInt(width = me_idx_sz)
+   val bimo_index = UInt(bi_idx_sz.W)
+   val gsh0_index = UInt(g0_idx_sz.W)
+   val gsh1_index = UInt(g1_idx_sz.W)
+   val meta_index = UInt(me_idx_sz.W)
 
-   val bimo = UInt(width = fetch_width)
-   val gsh0 = UInt(width = fetch_width)
-   val gsh1 = UInt(width = fetch_width)
-   val meta = UInt(width = fetch_width)
+   val bimo = UInt(fetch_width.W)
+   val gsh0 = UInt(fetch_width.W)
+   val gsh1 = UInt(fetch_width.W)
+   val meta = UInt(fetch_width.W)
    override def cloneType: this.type = new GSkewResp(
       fetch_width, bi_idx_sz, g0_idx_sz, g1_idx_sz, me_idx_sz).asInstanceOf[this.type]
 }

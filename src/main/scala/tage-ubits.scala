@@ -101,10 +101,10 @@ class TageUbitMemorySeqMem(
 {
    //------------------------------------------------------------
 
-   val ubit_table       = SeqMem(num_entries, UInt(width = ubit_sz))
+   val ubit_table       = SeqMem(num_entries, UInt(ubit_sz.W))
 
    // maintain an async copy purely for assertions
-   val debug_ubit_table = Mem(num_entries, UInt(width = ubit_sz))
+   val debug_ubit_table = Mem(num_entries, UInt(ubit_sz.W))
    val debug_valids     = Reg(init=Vec.fill(num_entries){false.B})
 
    //------------------------------------------------------------
@@ -211,9 +211,9 @@ class TageUbitMemoryFlipFlop(
 
    require (ubit_sz == 1)
    // TODO implement each bit as its own Reg.
-   val ubit_table       = Reg(UInt(width=num_entries))
+   val ubit_table       = Reg(UInt(num_entries.W))
 
-   val debug_ubit_table = Mem(num_entries, UInt(width = ubit_sz))
+   val debug_ubit_table = Mem(num_entries, UInt(ubit_sz.W))
    val debug_valids     = Reg(init=Vec.fill(num_entries){false.B})
 
    //------------------------------------------------------------

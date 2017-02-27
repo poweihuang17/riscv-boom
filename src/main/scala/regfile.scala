@@ -49,11 +49,11 @@ class RegisterFile( num_registers: Int
 
    // --------------------------------------------------------------
 
-   val regfile = Mem(num_registers, Bits(width=register_width))
+   val regfile = Mem(num_registers, Bits(register_width.W))
 
    // --------------------------------------------------------------
 
-   val read_data = Wire(Vec(num_read_ports, Bits(width = register_width)))
+   val read_data = Wire(Vec(num_read_ports, Bits(register_width.W)))
 
    for (i <- 0 until num_read_ports)
    {

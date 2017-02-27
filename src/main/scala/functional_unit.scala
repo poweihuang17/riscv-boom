@@ -92,10 +92,10 @@ class FuncUnitReq(data_width: Int)(implicit p: Parameters) extends BoomBundle()(
 
    val num_operands = 3
 
-   val rs1_data = UInt(width = data_width)
-   val rs2_data = UInt(width = data_width)
-   val rs3_data = UInt(width = data_width) // only used for FMA units
-//   val rs_data = Vec.fill(num_operands) {UInt(width=data_width)}
+   val rs1_data = UInt(data_width.W)
+   val rs2_data = UInt(data_width.W)
+   val rs3_data = UInt(data_width.W) // only used for FMA units
+//   val rs_data = Vec.fill(num_operands) {UInt(data_width.W)}
 //   def rs1_data = rs_data(0)
 //   def rs2_data = rs_data(1)
 //   def rs3_data = rs_data(2)
@@ -108,10 +108,10 @@ class FuncUnitReq(data_width: Int)(implicit p: Parameters) extends BoomBundle()(
 class FuncUnitResp(data_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
 {
    val uop = new MicroOp()
-   val data = UInt(width = data_width)
+   val data = UInt(data_width.W)
    val fflags = new ValidIO(new FFlagsResp)
-   val addr = UInt(width = vaddrBits+1) // only for maddr -> LSU
-   val mxcpt = new ValidIO(UInt(width=rocket.Causes.all.max)) //only for maddr->LSU
+   val addr = UInt((vaddrBits+1).W) // only for maddr -> LSU
+   val mxcpt = new ValidIO(UInt(rocket.Causes.all.max.W)) //only for maddr->LSU
 
    override def cloneType = new FuncUnitResp(data_width)(p).asInstanceOf[this.type]
 }
@@ -120,7 +120,7 @@ class BypassData(num_bypass_ports: Int, data_width: Int)(implicit p: Parameters)
 {
    val valid = Vec(num_bypass_ports, Bool())
    val uop   = Vec(num_bypass_ports, new MicroOp())
-   val data  = Vec(num_bypass_ports, UInt(width = data_width))
+   val data  = Vec(num_bypass_ports, UInt(data_width.W))
 
    def getNumPorts: Int = num_bypass_ports
    override def cloneType: this.type = new BypassData(num_bypass_ports, data_width).asInstanceOf[this.type]
@@ -130,13 +130,13 @@ class BrResolutionInfo(implicit p: Parameters) extends BoomBundle()(p)
 {
    val valid      = Bool()
    val mispredict = Bool()
-   val mask       = UInt(width = MAX_BR_COUNT) // the resolve mask
-   val tag        = UInt(width = BR_TAG_SZ)    // the branch tag that was resolved
-   val exe_mask   = UInt(width = MAX_BR_COUNT) // the br_mask of the actual branch uop
+   val mask       = UInt(MAX_BR_COUNT.W) // the resolve mask
+   val tag        = UInt(BR_TAG_SZ.W)    // the branch tag that was resolved
+   val exe_mask   = UInt(MAX_BR_COUNT.W) // the br_mask of the actual branch uop
                                                // used to reset the dec_br_mask
-   val rob_idx    = UInt(width = ROB_ADDR_SZ)
-   val ldq_idx    = UInt(width = MEM_ADDR_SZ)  // track the "tail" of loads and stores, so we can
-   val stq_idx    = UInt(width = MEM_ADDR_SZ)  // quickly reset the LSU on a mispredict
+   val rob_idx    = UInt(ROB_ADDR_SZ.W)
+   val ldq_idx    = UInt(MEM_ADDR_SZ.W)  // track the "tail" of loads and stores, so we can
+   val stq_idx    = UInt(MEM_ADDR_SZ.W)  // quickly reset the LSU on a mispredict
    val taken      = Bool()                     // which direction did the branch go?
    val is_jr      = Bool()
 
@@ -151,9 +151,9 @@ class BrResolutionInfo(implicit p: Parameters) extends BoomBundle()(p)
 class BranchUnitResp(implicit p: Parameters) extends BoomBundle()(p)
 {
    val take_pc         = Bool()
-   val target          = UInt(width = vaddrBits+1)
+   val target          = UInt((vaddrBits+1).W)
 
-   val pc              = UInt(width = vaddrBits+1) // TODO this isn't really a branch_unit thing
+   val pc              = UInt((vaddrBits+1).W) // TODO this isn't really a branch_unit thing
 
    val brinfo          = new BrResolutionInfo()
    val btb_update_valid= Bool() // TODO turn this into a directed bundle so we can fold this into btb_update?
@@ -539,12 +539,12 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
    // Response
    // TODO add clock gate on resp bits from functional units
 //   io.resp.bits.data := RegEnable(alu.io.out, io.req.valid)
-//   val reg_data = Reg(outType = Bits(width = xLen))
+//   val reg_data = Reg(outType = Bits(xLen.W))
 //   reg_data := alu.io.out
 //   io.resp.bits.data := reg_data
 
    val r_val  = Reg(init = Vec.fill(num_stages) { false.B })
-   val r_data = Reg(Vec(num_stages, UInt(width=xLen)))
+   val r_data = Reg(Vec(num_stages, UInt(xLen.W)))
    r_val (0) := io.req.valid
    r_data(0) := alu.io.out
    for (i <- 1 until num_stages)

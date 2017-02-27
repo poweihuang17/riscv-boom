@@ -119,16 +119,16 @@ class LoadReqSlot(implicit p: Parameters) extends BoomModule()(p)
 
 class DCacheReq(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val addr    = UInt(width = coreMaxAddrBits)
+   val addr    = UInt(coreMaxAddrBits.W)
    val uop     = new MicroOp()
-   val data    = Bits(width = coreDataBits)
+   val data    = Bits(coreDataBits.W)
    val kill    = Bool()    // e.g., LSU detects load misspeculation
 }
 
 class NackInfo(implicit p: Parameters) extends BoomBundle()(p)
 {
    val valid      = Bool()
-   val lsu_idx    = UInt(width = MEM_ADDR_SZ)
+   val lsu_idx    = UInt(MEM_ADDR_SZ.W)
    val isload     = Bool()
    val cache_nack = Bool() // was the cache nacking us, or the LSU
                            // cache nacks for stuctural hazards (MUST kill st->ld forwardings)
@@ -137,10 +137,10 @@ class NackInfo(implicit p: Parameters) extends BoomBundle()(p)
 
 class DCacheResp(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val data         = Bits(width = coreDataBits)
-   val data_subword = Bits(width = coreDataBits)
+   val data         = Bits(coreDataBits.W)
+   val data_subword = Bits(coreDataBits.W)
    val uop          = new MicroOp
-   val typ          = Bits(width = rocket.MT_SZ)
+   val typ          = Bits(rocket.MT_SZ.W)
 }
 
 
@@ -160,7 +160,7 @@ class DCMemPortIO(implicit p: Parameters) extends BoomBundle()(p)
 //   val debug = new BoomBundle()(p)
 //   {
 //      val memreq_val = Bool()
-//      val memreq_lidx = UInt(width=MEM_ADDR_SZ)
+//      val memreq_lidx = UInt(MEM_ADDR_SZ.W)
 //      val memresp_val = Bool()
 //      val req_kill = Bool()
 //      val nack = Bool()
@@ -221,7 +221,7 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
 
 
    // dispatch/entry logic
-   val enq_idx = Wire(UInt(width = log2Up(max_num_inflight)))
+   val enq_idx = Wire(UInt(log2Up(max_num_inflight).W))
    enq_idx := UInt(0)
 
    for (i <- max_num_inflight-1 to 0 by -1)

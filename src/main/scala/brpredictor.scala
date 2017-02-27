@@ -44,7 +44,7 @@ import _root_.util.Str
 // expecting to receive it back when it needs to perform an update.
 class BpdResp(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val takens = UInt(width = FETCH_WIDTH)
+   val takens = UInt(FETCH_WIDTH.W)
 
    // Roughly speaking, track the outcome of the last N branches.
    // The purpose of these is for resetting the global history on a branch
@@ -52,11 +52,11 @@ class BpdResp(implicit p: Parameters) extends BoomBundle()(p)
    // as speculative updates to the global history will have occurred between
    // the branch predictor is indexed and when the branch makes its own
    // prediction and update to the history.
-   val history = if (!ENABLE_VLHR) Some(UInt(width = GLOBAL_HISTORY_LENGTH)) else None
+   val history = if (!ENABLE_VLHR) Some(UInt(GLOBAL_HISTORY_LENGTH.W)) else None
    // Only track user-mode history.
-   val history_u = if (!ENABLE_VLHR) Some(UInt(width = GLOBAL_HISTORY_LENGTH)) else None
+   val history_u = if (!ENABLE_VLHR) Some(UInt(GLOBAL_HISTORY_LENGTH.W)) else None
    // For very long histories, implement as a circular buffer and only snapshot the tail pointer.
-   val history_ptr = UInt(width = log2Up(VLHR_LENGTH))
+   val history_ptr = UInt(log2Up(VLHR_LENGTH).W)
 
    // The info field stores the response information from the branch predictor.
    // The response is stored (conceptually) in the ROB and is returned to the
@@ -64,7 +64,7 @@ class BpdResp(implicit p: Parameters) extends BoomBundle()(p)
    // predictor (and its configuration) changes the amount of information it
    // needs to store, and so we need to ask the predictor (in parameters.scala)
    // how many bits of info it requires
-   val info = UInt(width = BPD_INFO_SIZE)
+   val info = UInt(BPD_INFO_SIZE.W)
 }
 
 // BP2 stage needs to speculatively update the history register with what the
@@ -94,13 +94,13 @@ class BpdUpdate(implicit p: Parameters) extends BoomBundle()(p)
    // new_pc_same_packet: is the new target PC after a misprediction found
    // within the same fetch packet as the mispredicting branch? If yes, then
    // we have to be careful which "history" we show the new PC.
-   val pc = UInt(width = vaddrBits)
-   val br_pc = UInt(width = log2Up(FETCH_WIDTH)+log2Ceil(coreInstBytes))
-   val brob_idx   = UInt(width = BROB_ADDR_SZ)
+   val pc = UInt(vaddrBits.W)
+   val br_pc = UInt((log2Up(FETCH_WIDTH)+log2Ceil(coreInstBytes)).W)
+   val brob_idx   = UInt(BROB_ADDR_SZ.W)
    val mispredict = Bool()
-   val history     = if (!ENABLE_VLHR) Some(UInt(width = GLOBAL_HISTORY_LENGTH)) else None
-   val history_u   = if (!ENABLE_VLHR) Some(UInt(width = GLOBAL_HISTORY_LENGTH)) else None
-   val history_ptr = UInt(width = log2Up(VLHR_LENGTH))
+   val history     = if (!ENABLE_VLHR) Some(UInt(GLOBAL_HISTORY_LENGTH.W)) else None
+   val history_u   = if (!ENABLE_VLHR) Some(UInt(GLOBAL_HISTORY_LENGTH.W)) else None
+   val history_ptr = UInt(log2Up(VLHR_LENGTH).W)
    val bpd_predict_val = Bool()
    val bpd_mispredict = Bool()
    val taken = Bool()
@@ -109,7 +109,7 @@ class BpdUpdate(implicit p: Parameters) extends BoomBundle()(p)
 
    // give the bpd back the information it sent out when it made a prediction.
    // this information may include things like CSR snapshots.
-   val info = UInt(width = BPD_INFO_SIZE)
+   val info = UInt(BPD_INFO_SIZE.W)
 }
 
 //--------------------------------------------------------------------------
@@ -139,7 +139,7 @@ abstract class BrPredictor(fetch_width: Int, val history_length: Int)(implicit p
    })
 
    // the (speculative) global history wire (used for accessing the branch predictor state).
-   val ghistory = Wire(Bits(width = history_length))
+   val ghistory = Wire(Bits(history_length.W))
 
    // the commit update bundle (we update predictors).
    val commit = Wire(Valid(new BrobEntry(fetch_width)))
@@ -568,7 +568,7 @@ class BrobBackendIo(fetch_width: Int)(implicit p: Parameters) extends BoomBundle
 
 class BrobDeallocateIdx(implicit p: Parameters) extends BoomBundle()(p)
 {
-   val brob_idx = UInt(width = BROB_ADDR_SZ)
+   val brob_idx = UInt(BROB_ADDR_SZ.W)
 }
 
 // Each "entry" corresponds to a single fetch packet.
@@ -582,10 +582,10 @@ class BrobEntryMetaData(fetch_width: Int)(implicit p: Parameters) extends BoomBu
    val taken        = Vec(fetch_width, Bool())
    val mispredicted = Vec(fetch_width, Bool()) // Did bpd mispredict the br? (aka should we update predictor).
                                                // Only set for branches, not jumps.
-   val brob_idx     = UInt(width = BROB_ADDR_SZ)
+   val brob_idx     = UInt(BROB_ADDR_SZ.W)
 
    val debug_executed = Bool() // Did a BR or JALR get executed? Verify we're not deallocating an empty entry.
-   val debug_rob_idx = UInt(width = ROB_ADDR_SZ)
+   val debug_rob_idx = UInt(ROB_ADDR_SZ.W)
 
    override def cloneType: this.type = new BrobEntryMetaData(fetch_width).asInstanceOf[this.type]
 }
