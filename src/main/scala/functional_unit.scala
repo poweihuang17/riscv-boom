@@ -31,7 +31,7 @@ object FUConstants
 {
    // bit mask, since a given execution pipeline may support multiple functional units
    val FUC_SZ = 8
-   val FU_X   = BitPat.DC(FUC_SZ)
+   val FU_X   = BitPat.dontCare(FUC_SZ)
    val FU_ALU =   1.U(FUC_SZ.W)
    val FU_BRU =   2.U(FUC_SZ.W)
    val FU_MEM =   4.U(FUC_SZ.W)

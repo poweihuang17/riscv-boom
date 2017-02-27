@@ -199,7 +199,7 @@ class Rob(width: Int
    println("    log2Ceil(width): " + log2Ceil(width))
    println("    FPU FFlag Ports: " + num_fpu_ports)
 
-   val s_reset :: s_normal :: s_rollback :: s_wait_till_empty :: Nil = Enum(UInt(),4)
+   val s_reset :: s_normal :: s_rollback :: s_wait_till_empty :: Nil = Enum(4)
    val rob_state = Reg(init = s_reset)
 
 

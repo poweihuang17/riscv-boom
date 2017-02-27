@@ -54,7 +54,7 @@ trait ScalarOpConstants
    //************************************
    // Control Signals
 
-   val s_invalid :: s_valid_1 :: s_valid_2 :: Nil = Enum(UInt(),3)
+   val s_invalid :: s_valid_1 :: s_valid_2 :: Nil = Enum(3)
 
    // PC Select Signal
    val PC_PLUS4 = 0.U(2.W)  // PC + 4
