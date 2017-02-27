@@ -8,8 +8,10 @@ package boom
    // Note: fdiv, fsqrt unsupported.
    // Note: (this FPU currently only supports fixed latency ops)
 
-import chisel3._
-import chisel3.util._
+// import chisel3._
+// import chisel3.util._
+import chisel3.Input
+import Chisel._
 import cde.Parameters
 
 import rocket.FPConstants._
@@ -145,7 +147,7 @@ class FPU(implicit p: Parameters) extends BoomModule()(p)
    val fp_rm = Mux(ImmGenRm(io_req.uop.imm_packed) === 7.U, io_req.fcsr_rm, ImmGenRm(io_req.uop.imm_packed))
 
    val req = Wire(new rocket.FPInput)
-   req := fp_ctrl
+   req := fp_ctrl // FIXME: field mismatches
    req.rm := fp_rm
    req.in1 := io_req.rs1_data
    req.in2 := io_req.rs2_data

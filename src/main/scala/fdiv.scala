@@ -13,8 +13,10 @@
 
 package boom
 
-import chisel3._
-import chisel3.util._
+// import chisel3._
+// import chisel3.util._
+import chisel3.Input
+import Chisel._
 import cde.Parameters
 
 import rocket.FPConstants._
