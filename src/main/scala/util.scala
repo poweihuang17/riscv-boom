@@ -64,7 +64,7 @@ object PerformShiftRegister
 {
    def apply(reg_val: UInt, new_bit: Bool): UInt =
    {
-      reg_val := Cat(reg_val(reg_val.getWidth-1, 0).toUInt, new_bit.toUInt).toUInt
+      reg_val := Cat(reg_val(reg_val.getWidth-1, 0).asUInt(), new_bit.asUInt()).asUInt()
       reg_val
    }
 }

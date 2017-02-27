@@ -560,7 +560,7 @@ class FetchSerializerNtoM(implicit p: Parameters) extends BoomModule()(p)
       for (i <- 0 until DECODE_WIDTH)
       {
          io.deq.bits.uops(i).valid          := io.enq.bits.mask(i)
-         io.deq.bits.uops(i).pc             := (io.enq.bits.pc.toSInt & (-(FETCH_WIDTH*coreInstBytes).S)).toUInt + (i << 2).U
+         io.deq.bits.uops(i).pc             := (io.enq.bits.pc.toSInt & (-(FETCH_WIDTH*coreInstBytes).S)).asUInt() + (i << 2).U
          io.deq.bits.uops(i).fetch_pc_lob   := io.enq.bits.pc
          io.deq.bits.uops(i).inst           := io.enq.bits.insts(i)
          io.deq.bits.uops(i).xcpt_if        := io.enq.bits.xcpt_if

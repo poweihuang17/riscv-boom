@@ -241,7 +241,7 @@ class Rob(width: Int
    def GetBankIdx(rob_idx: UInt): UInt =
    {
       if(width == 1) { return 0.U }
-      else           { return rob_idx(log2Up(width)-1, 0).toUInt }
+      else           { return rob_idx(log2Up(width)-1, 0).asUInt() }
    }
 
    // **************************************************************************
@@ -290,7 +290,7 @@ class Rob(width: Int
    val rob_pc_hob_next_val = rob_brt_vals.reduce(_|_)
 
    val bypass_next_bank_idx = if (width == 1) 0.U else PriorityEncoder(io.dis_valids.asUInt())
-   val bypass_next_pc = (io.dis_uops(0).pc.toSInt & (-(DECODE_WIDTH*coreInstBytes)).S).toUInt +
+   val bypass_next_pc = (io.dis_uops(0).pc.toSInt & (-(DECODE_WIDTH*coreInstBytes)).S).asUInt() +
                         Cat(bypass_next_bank_idx, 0.U(2.W))
 
    io.get_pc.next_val := rob_pc_hob_next_val || io.dis_valids.reduce(_|_)

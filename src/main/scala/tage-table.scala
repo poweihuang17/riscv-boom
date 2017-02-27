@@ -266,7 +266,7 @@ class TageTable(
       else
       {
          var res = 0.U(clen.W)
-         var remaining = input.toUInt
+         var remaining = input.asUInt()
          for (i <- 0 to hlen-1 by clen)
          {
             val len = if (i + clen > hlen ) (hlen - i) else clen
