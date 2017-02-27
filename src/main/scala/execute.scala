@@ -380,7 +380,9 @@ class MemExeUnit(implicit p: Parameters) extends ExecutionUnit(num_rf_read_ports
    io.lsu_io.lsu_fencei_rdy := lsu.io.lsu_fencei_rdy
 
    // enqueue addresses,st-data at the end of Execute
-   lsu.io.exe_resp <> maddrcalc.io.resp
+   // lsu.io.exe_resp <> maddrcalc.io.resp
+   lsu.io.exe_resp.bits := maddrcalc.io.resp.bits
+   lsu.io.exe_resp.valid := maddrcalc.io.resp.valid
 
    io.lsu_io.ptw <> lsu.io.ptw
    io.lsu_io.xcpt <> lsu.io.xcpt
@@ -680,7 +682,9 @@ class ALUMemExeUnit(
    io.lsu_io.lsu_fencei_rdy := lsu.io.lsu_fencei_rdy
 
    // enqueue addresses,st-data at the end of Execute
-   lsu.io.exe_resp <> maddrcalc.io.resp
+   // lsu.io.exe_resp <> maddrcalc.io.resp
+   lsu.io.exe_resp.bits := maddrcalc.io.resp.bits
+   lsu.io.exe_resp.valid := maddrcalc.io.resp.valid
 
    io.lsu_io.ptw <> lsu.io.ptw
    io.lsu_io.xcpt <> lsu.io.xcpt

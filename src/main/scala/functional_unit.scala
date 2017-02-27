@@ -631,7 +631,12 @@ class FPUUnit(implicit p: Parameters) extends PipelinedFunctionalUnit(num_stages
                                             , data_width = 65)(p)
 {
    val fpu = Module(new FPU())
-   fpu.io.req <> io.req
+   // fpu.io.req <> io.req // missing fields in the left
+   fpu.io.req.bits.uop := io.req.bits.uop
+   fpu.io.req.bits.rs1_data := io.req.bits.rs1_data
+   fpu.io.req.bits.rs2_data := io.req.bits.rs2_data
+   fpu.io.req.bits.rs3_data := io.req.bits.rs3_data
+   fpu.io.req.valid := io.req.valid
    fpu.io.req.bits.fcsr_rm := io.fcsr_rm
 
    io.resp.bits.data              := fpu.io.resp.bits.data
