@@ -461,7 +461,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
 
       br_unit.btb_update.pc               := fetch_pc // tell the BTB which pc to tag check against
       br_unit.btb_update.br_pc            := uop_pc_
-      br_unit.btb_update.target           := (br_unit.target.toSInt & (-coreInstBytes).S).asUInt()
+      br_unit.btb_update.target           := (br_unit.target.asSInt() & (-coreInstBytes).S).asUInt()
       br_unit.btb_update.prediction.valid := io.get_pred.info.btb_resp_valid // did this branch's fetch packet have
                                                                              // a BTB hit in fetch?
       br_unit.btb_update.prediction.bits  := io.get_pred.info.btb_resp       // give the BTB back its BTBResp
@@ -512,15 +512,15 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
          val a = a0 >> vaddrBits-1
          val e = ea(vaddrBits,vaddrBits-1)
          Mux(a === 0.U || a === 1.U, e =/= 0.U,
-         Mux(a.toSInt === (-1).S || a.toSInt === (-2).S, e.toSInt === (-1).S,
+         Mux(a.asSInt() === (-1).S || a.asSInt() === (-2).S, e.asSInt() === (-1).S,
             e(0)))
       }
 
       val bj_base = Mux(uop.uopc === uopJALR, io.req.bits.rs1_data, uop_pc_)
-      val bj_offset = imm_xprlen(20,0).toSInt
-      val bj64 = (bj_base.toSInt + bj_offset).asUInt()
+      val bj_offset = imm_xprlen(20,0).asSInt()
+      val bj64 = (bj_base.asSInt() + bj_offset).asUInt()
       val bj_msb = Mux(uop.uopc === uopJALR, vaSign(io.req.bits.rs1_data, bj64.asUInt()), vaSign(uop_pc_, bj64.asUInt()))
-      bj_addr := (Cat(bj_msb, bj64(vaddrBits-1,0)).toSInt & (-2).S).asUInt()
+      bj_addr := (Cat(bj_msb, bj64(vaddrBits-1,0)).asSInt() & (-2).S).asUInt()
 
       br_unit.pc             := uop_pc_
       br_unit.debug_btb_pred := io.get_pred.info.btb_resp_valid && io.get_pred.info.btb_resp.taken
@@ -580,7 +580,7 @@ class MemAddrCalcUnit(implicit p: Parameters) extends PipelinedFunctionalUnit(nu
                                                      , is_branch_unit = false)(p)
 {
    // perform address calculation
-   val sum = (io.req.bits.rs1_data.toSInt + io.req.bits.uop.imm_packed(19,8).toSInt).asUInt()
+   val sum = (io.req.bits.rs1_data.asSInt() + io.req.bits.uop.imm_packed(19,8).asSInt()).asUInt()
    val ea_sign = Mux(sum(vaddrBits-1), ~sum(63,vaddrBits) === 0.U,
                                         sum(63,vaddrBits) =/= 0.U)
    val effective_address = Cat(ea_sign, sum(vaddrBits-1,0)).asUInt()
