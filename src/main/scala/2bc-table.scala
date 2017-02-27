@@ -126,25 +126,25 @@ class PTableBanked(
    val p_table_1 = SeqMem(num_entries/2, Vec(fetch_width, Bool()))
 
    private def getBank (idx: UInt): UInt = idx(0)
-   private def getRowIdx (idx: UInt): UInt = idx >> UInt(1)
+   private def getRowIdx (idx: UInt): UInt = idx >> 1.U
 
    val widx = io.update.bits.index
    val rbank = getBank(ridx)
    val wbank = getBank(widx)
    io.update.ready := rbank =/= wbank
 
-   val ren_0   = rbank === UInt(0)
-   val ren_1   = rbank === UInt(1)
+   val ren_0   = rbank === 0.U
+   val ren_1   = rbank === 1.U
    val rout_0  = RegEnable(p_table_0.read(getRowIdx(ridx), ren_0).asUInt(), !io.stall)
    val rout_1  = RegEnable(p_table_1.read(getRowIdx(ridx), ren_1).asUInt(), !io.stall)
    val wdata   = Vec(io.update.bits.new_value.toBools)
    val wmask = io.update.bits.executed.toBools
 
-   when (!ren_0 && wbank === UInt(0) && io.update.valid)
+   when (!ren_0 && wbank === 0.U && io.update.valid)
    {
       p_table_0.write(getRowIdx(widx), wdata, wmask)
    }
-   when (!ren_1 && wbank === UInt(1) && io.update.valid)
+   when (!ren_1 && wbank === 1.U && io.update.valid)
    {
       p_table_1.write(getRowIdx(widx), wdata, wmask)
    }

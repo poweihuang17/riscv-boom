@@ -95,7 +95,7 @@ class FDivSqrtUnit(implicit p: Parameters) extends FunctionalUnit(is_pipelined =
    {
       val s2d = Module(new hardfloat.RecFNToRecFN(inExpWidth = 8, inSigWidth = 24, outExpWidth = 11, outSigWidth = 53))
       s2d.io.in := x
-      s2d.io.roundingMode := UInt(0)
+      s2d.io.roundingMode := 0.U
       s2d.io.out
    }
    val in1_upconvert = upconvert(io.req.bits.rs1_data)
@@ -108,7 +108,7 @@ class FDivSqrtUnit(implicit p: Parameters) extends FunctionalUnit(is_pipelined =
       r_buffer_req.uop.br_mask := GetNewBrMask(io.brinfo, io.req.bits.uop)
       r_buffer_fin := fdiv_decoder.io.sigs
       r_buffer_fin.rm := io.fcsr_rm
-      r_buffer_fin.typ := UInt(0) // unused for fdivsqrt
+      r_buffer_fin.typ := 0.U // unused for fdivsqrt
       r_buffer_fin.in1 := io.req.bits.rs1_data
       r_buffer_fin.in2 := io.req.bits.rs2_data
       when (fdiv_decoder.io.sigs.single)
@@ -191,7 +191,7 @@ class FDivSqrtUnit(implicit p: Parameters) extends FunctionalUnit(is_pipelined =
       inExpWidth = 11, inSigWidth = 53, outExpWidth = 8, outSigWidth = 24))
    downvert_d2s.io.in := r_out_wdata_double
    downvert_d2s.io.roundingMode := r_divsqrt_fin.rm
-   val out_flags = r_out_flags_double | Mux(r_divsqrt_fin.single, downvert_d2s.io.exceptionFlags, Bits(0))
+   val out_flags = r_out_flags_double | Mux(r_divsqrt_fin.single, downvert_d2s.io.exceptionFlags, 0.U)
 
    io.resp.valid := r_out_val && !IsKilledByBranch(io.brinfo, r_out_uop)
    io.resp.bits.uop := r_out_uop

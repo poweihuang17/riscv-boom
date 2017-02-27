@@ -60,7 +60,7 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
       val resp              = new DecoupledIO(new FetchBundle)
    })
 
-   val fseq_reg = Reg(init = UInt(0, xLen))
+   val fseq_reg = Reg(init = 0.U(xLen.W))
    val if_pc_next = Wire(UInt((vaddrBits+1).W))
 
    val br_unit = io.br_unit
@@ -87,8 +87,8 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
                // started. This doesn't properly account for i-cache and i-tlb misses. :(
                printf("%d; O3PipeView:fetch:%d:0x%x:0:%d:DASM(%x)\n",
                   fetch_bundle.debug_events(i).fetch_seq,
-                  io.tsc_reg - UInt(2*O3_CYCLE_TIME),
-                  (fetch_bundle.pc.toSInt & SInt(-(fetch_width*coreInstBytes))).toUInt + UInt(i << 2),
+                  io.tsc_reg - (2*O3_CYCLE_TIME).U,
+                  (fetch_bundle.pc.toSInt & (-(fetch_width*coreInstBytes)).S).toUInt + (i << 2).U,
                   fetch_bundle.debug_events(i).fetch_seq,
                   fetch_bundle.insts(i))
             }
@@ -152,7 +152,7 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
    io.imem.btb_update.bits.br_pc      := Mux(br_unit.btb_update_valid, br_unit.btb_update.br_pc, io.bp2_pc_of_br_inst)
    io.imem.btb_update.bits.target     := Mux(br_unit.btb_update_valid, br_unit.btb_update.target,
                                                                        (io.bp2_pred_target.toSInt &
-                                                                        SInt(-coreInstBytes)).toUInt)
+                                                                        (-coreInstBytes).S).toUInt)
    io.imem.btb_update.bits.prediction := Mux(br_unit.btb_update_valid, br_unit.btb_update.prediction,
                                                                        io.imem.resp.bits.btb)
    io.imem.btb_update.bits.taken      := Mux(br_unit.btb_update_valid, br_unit.btb_update.taken,

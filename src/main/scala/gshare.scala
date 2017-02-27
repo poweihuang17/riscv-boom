@@ -60,7 +60,7 @@ class GShareBrPredictor(
    //------------------------------------------------------------
 
    private def Hash (addr: UInt, hist: UInt) =
-      (addr >> UInt(log2Up(fetch_width*coreInstBytes))) ^ hist
+      (addr >> log2Up(fetch_width*coreInstBytes).U) ^ hist
 
    //------------------------------------------------------------
    // Predictor state.

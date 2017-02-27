@@ -42,7 +42,7 @@ class IMul(imul_stages: Int) extends Module
    val mul_result = lhs.toSInt * rhs.toSInt //TODO:130 bits
 
    val mul_output_mux = MuxCase(
-      UInt(0, 64), Array(
+      0.U(64.W), Array(
          FN(DW_64, FN_MUL)    -> mul_result(63,0),
          FN(DW_64, FN_MULH)   -> mul_result(127,64),
          FN(DW_64, FN_MULHU)  -> mul_result(127,64),

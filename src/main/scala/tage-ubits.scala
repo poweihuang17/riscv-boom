@@ -68,9 +68,9 @@ abstract class TageUbitMemory(
       def InitializeIo(dummy: Int=0) =
       {
          this.allocate_valid := false.B
-         this.allocate_idx := UInt(0)
+         this.allocate_idx := 0.U
          this.update_valid := false.B
-         this.update_idx := UInt(0)
+         this.update_idx := 0.U
          this.update_inc := false.B
          this.degrade_valid := false.B
          this.is_degrading := false.B
@@ -125,7 +125,7 @@ class TageUbitMemorySeqMem(
    // TODO add a read_enable (only reads on commit.valid within TAGE).
    // But must add assert that allocate/update is always following a Reg(read-enable).
    val s2_out = RegNext(ubit_table.read(io.s0_read_idx, true.B))
-   io.s2_is_useful := s2_out =/= UInt(0) || s2_bypass_useful
+   io.s2_is_useful := s2_out =/= 0.U || s2_bypass_useful
 
    // TODO: missing the bypassing in cycle1.
 //   when (RegNext(RegNext(debug_valids(io.s0_read_idx))))
@@ -145,30 +145,30 @@ class TageUbitMemorySeqMem(
    val bypass_upinc = RegNext(io.update_valid && io.update_inc && io.update_idx === s1_read_idx)
    val bypass_updec = RegNext(io.update_valid && !io.update_inc && io.update_idx === s1_read_idx)
 
-   val u = Wire(UInt(width=ubit_sz+1))
+   val u = Wire(UInt((ubit_sz+1).W))
    u :=
       Mux(bypass_alloc,
-         UInt(UBIT_INIT),
-      Mux(bypass_upinc && s2_out =/= UInt(UBIT_MAX),
-         s2_out + UInt(1),
-      Mux(bypass_updec && s2_out =/= UInt(0),
-         s2_out - UInt(1),
+         UBIT_INIT.U,
+      Mux(bypass_upinc && s2_out =/= UBIT_MAX.U,
+         s2_out + 1.U,
+      Mux(bypass_updec && s2_out =/= 0.U,
+         s2_out - 1.U,
          s2_out)))
 
-   assert (!(bypass_alloc && s2_out =/= UInt(0)), "[ubit] allocation occurred but s2_out wasn't zero")
+   assert (!(bypass_alloc && s2_out =/= 0.U), "[ubit] allocation occurred but s2_out wasn't zero")
    assert (!(u >> ubit_sz), "[ubit] next value logic wrapped around.")
 
    val inc = io.update_inc
    val next_u =
-      Mux(inc && u < UInt(UBIT_MAX),
-         u + UInt(1),
-      Mux(!inc && u > UInt(0),
-         u - UInt(1),
+      Mux(inc && u < UBIT_MAX.U,
+         u + 1.U,
+      Mux(!inc && u > 0.U,
+         u - 1.U,
          u))
 
 
    val wen = io.allocate_valid || io.update_valid
-   val wdata = Mux(io.allocate_valid, UInt(UBIT_INIT), next_u)
+   val wdata = Mux(io.allocate_valid, UBIT_INIT.U, next_u)
    val waddr = Mux(io.allocate_valid, io.allocate_idx, RegNext(RegNext(io.s0_read_idx)))
 
    when (wen)
@@ -193,7 +193,7 @@ class TageUbitMemorySeqMem(
    val r_debug_allocate_value = RegNext(RegNext(debug_ubit_table(io.allocate_idx)))
    when (RegNext(RegNext(io.allocate_valid && debug_valids(io.allocate_idx))))
    {
-      assert(r_debug_allocate_value === UInt(0), "[ubits] Tried to allocate a useful entry")
+      assert(r_debug_allocate_value === 0.U, "[ubits] Tried to allocate a useful entry")
    }
 }
 
@@ -221,7 +221,7 @@ class TageUbitMemoryFlipFlop(
    val s1_read_idx = RegNext(io.s0_read_idx)
    val s2_read_idx = RegNext(s1_read_idx)
    val s2_out = ubit_table(s2_read_idx)
-   io.s2_is_useful := s2_out =/= UInt(0)
+   io.s2_is_useful := s2_out =/= 0.U
 
    when (debug_valids(s2_read_idx))
    {
@@ -235,20 +235,20 @@ class TageUbitMemoryFlipFlop(
 
    val inc = io.update_inc
    val next_u =
-      Mux(inc && u < UInt(UBIT_MAX),
-         u + UInt(1),
-      Mux(!inc && u > UInt(0),
-         u - UInt(1),
+      Mux(inc && u < UBIT_MAX.U,
+         u + 1.U,
+      Mux(!inc && u > 0.U,
+         u - 1.U,
          u))
 
 
    val wen = io.allocate_valid || io.update_valid
-   val wdata = Mux(io.allocate_valid, UInt(UBIT_INIT), next_u)
+   val wdata = Mux(io.allocate_valid, UBIT_INIT.U, next_u)
    val waddr = Mux(io.allocate_valid, io.allocate_idx, RegNext(RegNext(io.s0_read_idx)))
 
    when (io.degrade_valid)
    {
-      ubit_table := UInt(0)
+      ubit_table := 0.U
    }
    .elsewhen (wen)
    {
@@ -263,7 +263,7 @@ class TageUbitMemoryFlipFlop(
 
    when (io.allocate_valid)
    {
-      assert(ubit_table(io.allocate_idx) === UInt(0), "[ubits] Tried to allocate a useful entry")
+      assert(ubit_table(io.allocate_idx) === 0.U, "[ubits] Tried to allocate a useful entry")
    }
 }
 

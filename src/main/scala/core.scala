@@ -142,9 +142,9 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    //****************************************
    // Time Stamp Counter & Retired Instruction Counter
    // (only used for printf and vcd dumps - the actual counters are in the CSRFile)
-   val tsc_reg  = Reg(init = UInt(0, xLen))
-   val irt_reg  = Reg(init = UInt(0, xLen))
-   tsc_reg  := tsc_reg + Mux(O3PIPEVIEW_PRINTF.B, UInt(O3_CYCLE_TIME), UInt(1))
+   val tsc_reg  = Reg(init = 0.U(xLen.W))
+   val irt_reg  = Reg(init = 0.U(xLen.W))
+   tsc_reg  := tsc_reg + Mux(O3PIPEVIEW_PRINTF.B, O3_CYCLE_TIME.U, 1.U)
    irt_reg  := irt_reg + PopCount(rob.io.commit.valids.asUInt())
 
 
@@ -189,8 +189,8 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    // TODO: work-around rocket-chip issue #184, broken imem.mask for fetchWidth=1
    if (FETCH_WIDTH == 1)
    {
-      fetch_unit.io.imem.resp.bits.mask := UInt(1)
-      fetch_unit.io.imem.resp.bits.btb.bits.bridx := UInt(0)
+      fetch_unit.io.imem.resp.bits.mask := 1.U
+      fetch_unit.io.imem.resp.bits.btb.bits.bridx := 0.U
    }
    fetch_unit.io.br_unit <> br_unit
    fetch_unit.io.tsc_reg           := tsc_reg
@@ -231,8 +231,8 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    // TODO: work-around rocket-chip issue #184, broken imem.mask for fetchWidth=1
    if (FETCH_WIDTH == 1)
    {
-      bpd_stage.io.imem_resp.bits.mask := UInt(1)
-      bpd_stage.io.btb_resp.bits.bridx := UInt(0)
+      bpd_stage.io.imem_resp.bits.mask := 1.U
+      bpd_stage.io.btb_resp.bits.bridx := 0.U
    }
    io.imem.resp.ready <> fetch_unit.io.imem.resp.ready
 
@@ -258,7 +258,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    // use this to mask out insts coming from FetchBuffer that have been finished
    // for example, back pressure may cause us to only issue some instructions from FetchBuffer
    // but on the next cycle, we only want to retry a subset
-   val dec_finished_mask = Reg(init = Bits(0, DECODE_WIDTH))
+   val dec_finished_mask = Reg(init = 0.U(DECODE_WIDTH.W))
 
    // TODO need to generalize this logic to other width disparities
    require (DECODE_WIDTH == FETCH_WIDTH)
@@ -338,7 +338,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 
    when (dec_rdy || fetch_unit.io.clear_fetchbuffer)
    {
-      dec_finished_mask := Bits(0)
+      dec_finished_mask := 0.U
    }
    .otherwise
    {
@@ -462,7 +462,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
       if (DECODE_WIDTH == 1)
          dis_uops(w).rob_idx := dis_curr_rob_row_idx
       else
-         dis_uops(w).rob_idx := Cat(dis_curr_rob_row_idx, UInt(w, log2Up(DECODE_WIDTH)))
+         dis_uops(w).rob_idx := Cat(dis_curr_rob_row_idx, w.U(log2Up(DECODE_WIDTH).W))
 
       dis_uops(w).brob_idx := bpd_stage.io.brob.allocate_brob_tail
 
@@ -477,7 +477,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 
 
    bpd_stage.io.brob.allocate.valid := dis_valids.reduce(_|_) &&
-                                       dec_finished_mask === Bits(0) &&
+                                       dec_finished_mask === 0.U &&
                                        dec_has_br_or_jalr_in_packet
    bpd_stage.io.brob.allocate.bits.ctrl.executed.map{_ := false.B}
    bpd_stage.io.brob.allocate.bits.ctrl.taken.map{_ := false.B}
@@ -729,7 +729,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    rob.io.dis_valids := dis_valids
    rob.io.dis_has_br_or_jalr_in_packet := dec_has_br_or_jalr_in_packet
    rob.io.dis_partial_stall := !dec_rdy && !dis_valids(DECODE_WIDTH-1)
-   rob.io.dis_new_packet := dec_finished_mask === Bits(0)
+   rob.io.dis_new_packet := dec_finished_mask === 0.U
    rob.io.debug_tsc := tsc_reg
 
    dis_curr_rob_row_idx  := rob.io.curr_rob_tail
@@ -760,7 +760,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
             }
             val unrec_s = hardfloat.fNFromRecFN(8, 24, data)
             val unrec_d = hardfloat.fNFromRecFN(11, 53, data)
-            val unrec_out     = Mux(wb_uop.fp_single, Cat(UInt(0,32), unrec_s), unrec_d)
+            val unrec_out     = Mux(wb_uop.fp_single, Cat(0.U(32.W), unrec_s), unrec_d)
             if (exe_units(w).uses_csr_wport && (j == 0))
             {
                rob.io.debug_wb_wdata(cnt) := Mux(wb_uop.ctrl.csr_cmd =/= rocket.CSR.N, csr.io.rw.rdata,
@@ -838,14 +838,14 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 
    // detect pipeline freezes and throw error
    val idle_cycles = _root_.util.WideCounter(32)
-   when (rob.io.commit.valids.asUInt().orR || reset.toBool) { idle_cycles := UInt(0) }
+   when (rob.io.commit.valids.asUInt().orR || reset.toBool) { idle_cycles := 0.U }
    assert (!(idle_cycles.value(13)), "Pipeline has hung.")
 
 
    //-------------------------------------------------------------
    // Uarch Hardware Performance Events (HPEs)
 
-   csr.io.events.map(_ := UInt(0))
+   csr.io.events.map(_ := 0.U)
 
    require (nPerfEvents > 29)
    println ("   " + nPerfCounters + " HPM counters enabled (with " + nPerfEvents + " events).")
@@ -856,13 +856,13 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 
    // User-level instruction count.
    csr.io.events(2) := PopCount((Range(0,COMMIT_WIDTH)).map{w =>
-      rob.io.commit.valids(w) && (csr.io.status.prv === UInt(rocket.PRV.U))})
+      rob.io.commit.valids(w) && (csr.io.status.prv === rocket.PRV.U.U)})
 
    // L1 cache stats.
    csr.io.events(3) := io.counters.dc_miss
    csr.io.events(4) := io.counters.ic_miss
 
-   csr.io.events(5)  := csr.io.status.prv === UInt(rocket.PRV.U)
+   csr.io.events(5)  := csr.io.status.prv === rocket.PRV.U.U
 
    // Instruction mixes.
    csr.io.events(6)  := PopCount((Range(0,COMMIT_WIDTH)).map{w =>
@@ -921,8 +921,8 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 
 
    // Count user-level branches (subtract from total to get privilege branch accuracy)
-   csr.io.events(28) := br_unit.brinfo.valid && (csr.io.status.prv === UInt(rocket.PRV.U))
-   csr.io.events(29) := br_unit.brinfo.mispredict && (csr.io.status.prv === UInt(rocket.PRV.U))
+   csr.io.events(28) := br_unit.brinfo.valid && (csr.io.status.prv === rocket.PRV.U.U)
+   csr.io.events(29) := br_unit.brinfo.mispredict && (csr.io.status.prv === rocket.PRV.U.U)
 
    // count change of privilege modes
    csr.io.events(30) := csr.io.status.prv =/= RegNext(csr.io.status.prv)
@@ -948,7 +948,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 
       printf("--- Cyc=%d , ----------------- Ret: %d ----------------------------------\n  "
          , tsc_reg
-         , irt_reg & UInt(0xffffff))
+         , irt_reg & 0xffffff.U)
 
       for (w <- 0 until DECODE_WIDTH)
       {
@@ -967,14 +967,14 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 //         printf(") State: (%s: %s %s %s \u001b[1;31m%s\u001b[0m %s %s) BMsk:%x Mode:%s\n"
          printf(") ctate: (%c: %c %c %c %c %c %c) BMsk:%x Mode:%c\n"
          // chisel3 lacks %s support
-//         , Mux(rob.io.debug.state === UInt(0), Str("RESET"),
-//           Mux(rob.io.debug.state === UInt(1), Str("NORMAL"),
-//           Mux(rob.io.debug.state === UInt(2), Str("ROLLBK"),
-//           Mux(rob.io.debug.state === UInt(3), Str("WAIT_E"),
-         , Mux(rob.io.debug.state === UInt(0), Str("R"),
-           Mux(rob.io.debug.state === UInt(1), Str("N"),
-           Mux(rob.io.debug.state === UInt(2), Str("B"),
-           Mux(rob.io.debug.state === UInt(3), Str("W"),
+//         , Mux(rob.io.debug.state === 0.U, Str("RESET"),
+//           Mux(rob.io.debug.state === 1.U, Str("NORMAL"),
+//           Mux(rob.io.debug.state === 2.U, Str("ROLLBK"),
+//           Mux(rob.io.debug.state === 3.U, Str("WAIT_E"),
+         , Mux(rob.io.debug.state === 0.U, Str("R"),
+           Mux(rob.io.debug.state === 1.U, Str("N"),
+           Mux(rob.io.debug.state === 2.U, Str("B"),
+           Mux(rob.io.debug.state === 3.U, Str("W"),
                                                Str(" ")))))
 //         , Mux(rob.io.ready,Str("_"), Str("!ROB_RDY"))
          , Mux(rob.io.ready,Str("_"), Str("!"))
@@ -989,9 +989,9 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 //         , Mux(io.dmem.req.ready, Str("D$_Rdy"), Str("D$_BSY"))
          , Mux(io.dmem.req.ready, Str("R"), Str("B"))
          , dec_brmask_logic.io.debug.branch_mask
-         , Mux(csr.io.status.prv === Bits(0x3), Str("M"),
-           Mux(csr.io.status.prv === Bits(0x0), Str("U"),
-           Mux(csr.io.status.prv === Bits(0x1), Str("S"),  //2 is H
+         , Mux(csr.io.status.prv === 0x3.U, Str("M"),
+           Mux(csr.io.status.prv === 0x0.U, Str("U"),
+           Mux(csr.io.status.prv === 0x1.U, Str("S"),  //2 is H
                                                  Str("?"))))
          )
       }
@@ -1080,7 +1080,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
       //for (i <- 0 until io.dmem.debug.ld_req_slot.size)
       //{
       //   printf("     ld_req_slot[%d]=(%s%s) - laq_idx:%d pdst: %d bm:%x\n"
-      //      , UInt(i)
+      //      , i.U
       //      , Mux(io.dmem.debug.ld_req_slot(i).valid, Str("V"), Str("-"))
       //      , Mux(io.dmem.debug.ld_req_slot(i).killed, Str("K"), Str("-"))
       //      , io.dmem.debug.ld_req_slot(i).uop.ldq_idx
@@ -1120,14 +1120,14 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 
    if (COMMIT_LOG_PRINTF)
    {
-      var new_commit_cnt = UInt(0)
+      var new_commit_cnt = 0.U
       for (w <- 0 until COMMIT_WIDTH)
       {
          val priv = csr.io.status.prv
 
          when (rob.io.commit.valids(w))
          {
-            when (rob.io.commit.uops(w).dst_rtype === RT_FIX && rob.io.commit.uops(w).ldst =/= UInt(0))
+            when (rob.io.commit.uops(w).dst_rtype === RT_FIX && rob.io.commit.uops(w).ldst =/= 0.U)
             {
                printf("%d 0x%x (0x%x) x%d 0x%x\n",
                   priv, Sext(rob.io.commit.uops(w).pc(vaddrBits,0), xLen), rob.io.commit.uops(w).inst,

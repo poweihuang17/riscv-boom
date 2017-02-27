@@ -50,13 +50,13 @@ object GetNewBrMask
 //do two masks have at least 1 bit match?
 object maskMatch
 {
-   def apply(msk1: UInt, msk2: UInt): Bool = (msk1 & msk2) =/= UInt(0)
+   def apply(msk1: UInt, msk2: UInt): Bool = (msk1 & msk2) =/= 0.U
 }
 
 //clear one-bit in the Mask as specified by the idx
 object clearMaskBit
 {
-   def apply(msk: UInt, idx: UInt): UInt = (msk & ~(UInt(1) << idx))(msk.getWidth-1, 0)
+   def apply(msk: UInt, idx: UInt): UInt = (msk & ~(1.U << idx))(msk.getWidth-1, 0)
 }
 
 //shift a register over by one bit
@@ -78,7 +78,7 @@ object PerformCircularShiftRegister
    def apply(csr: UInt, new_bit: Bool, evict_bit: Bool, hlen: Int, clen: Int): UInt =
    {
       val carry = csr(clen-1)
-      val newval = Cat(csr, new_bit ^ carry) ^ (evict_bit << UInt(hlen % clen))
+      val newval = Cat(csr, new_bit ^ carry) ^ (evict_bit << (hlen % clen).U)
       newval
    }
 }
@@ -95,9 +95,9 @@ object WrapAdd
       }
       else
       {
-         val sum = Cat(UInt(0,1), value) + Cat(UInt(0,1), amt)
-         Mux(sum >= UInt(n),
-            sum - UInt(n),
+         val sum = Cat(0.U(1.W), value) + Cat(0.U(1.W), amt)
+         Mux(sum >= n.U,
+            sum - n.U,
             sum)
       }
    }
@@ -111,15 +111,15 @@ object WrapSub
    {
       if (isPow2(n))
       {
-         (value - UInt(amt))(log2Up(n)-1,0)
+         (value - amt.U)(log2Up(n)-1,0)
       }
       else
       {
-         val v = Cat(UInt(0,1), value)
-         val b = Cat(UInt(0,1), UInt(amt))
-         Mux(value >= UInt(amt),
-            value - UInt(amt),
-            UInt(n) - (UInt(amt) - value))
+         val v = Cat(0.U(1.W), value)
+         val b = Cat(0.U(1.W), amt.U)
+         Mux(value >= amt.U,
+            value - amt.U,
+            n.U - (amt.U - value))
       }
    }
 }
@@ -132,12 +132,12 @@ object WrapInc
    {
       if (isPow2(n))
       {
-         (value + UInt(1))(log2Up(n)-1,0)
+         (value + 1.U)(log2Up(n)-1,0)
       }
       else
       {
-         val wrap = (value === UInt(n-1))
-         Mux(wrap, UInt(0), value + UInt(1))
+         val wrap = (value === (n-1).U)
+         Mux(wrap, 0.U, value + 1.U)
       }
    }
 }
@@ -149,12 +149,12 @@ object WrapDec
    {
       if (isPow2(n))
       {
-         (value - UInt(1))(log2Up(n)-1,0)
+         (value - 1.U)(log2Up(n)-1,0)
       }
       else
       {
-         val wrap = (value === UInt(0))
-         Mux(wrap, UInt(n-1), value - UInt(1))
+         val wrap = (value === 0.U)
+         Mux(wrap, (n-1).U, value - 1.U)
       }
    }
 }
@@ -190,11 +190,11 @@ object ImmGen
       val sign = ip(LONGEST_IMM_SZ-1).toSInt
       val i30_20 = Mux(isel === IS_U, ip(18,8).toSInt, sign)
       val i19_12 = Mux(isel === IS_U || isel === IS_J, ip(7,0).toSInt, sign)
-      val i11    = Mux(isel === IS_U, SInt(0),
+      val i11    = Mux(isel === IS_U, 0.S,
                    Mux(isel === IS_J || isel === IS_B, ip(8).toSInt, sign))
-      val i10_5  = Mux(isel === IS_U, SInt(0), ip(18,14).toSInt)
-      val i4_1   = Mux(isel === IS_U, SInt(0), ip(13,9).toSInt)
-      val i0     = Mux(isel === IS_S || isel === IS_I, ip(8).toSInt, SInt(0))
+      val i10_5  = Mux(isel === IS_U, 0.S, ip(18,14).toSInt)
+      val i4_1   = Mux(isel === IS_U, 0.S, ip(13,9).toSInt)
+      val i0     = Mux(isel === IS_S || isel === IS_I, ip(8).toSInt, 0.S)
 
       return Cat(sign, i30_20, i19_12, i11, i10_5, i4_1, i0).toSInt
    }
@@ -212,7 +212,7 @@ object DebugIsJALR
 //      val is_jalr = rocket.DecodeLogic(inst, List(false.B),
 //                                       Array(
 //                                       JALR -> true.B))
-      inst(6,0) === UInt("b1100111")
+      inst(6,0) === ("b1100111").U
    }
 }
 
@@ -237,10 +237,10 @@ object DebugGetBJImm
       //      ))
       //val is_br :: nothing :: Nil = csignals
 
-   val is_br = (inst(6,0) === UInt("b1100011"))
+   val is_br = (inst(6,0) === ("b1100011").U)
 
-   val br_targ = Cat(Fill(12, inst(31)), Fill(8,inst(31)), inst(7), inst(30,25), inst(11,8), UInt(0,1))
-   val jal_targ= Cat(Fill(12, inst(31)), inst(19,12), inst(20), inst(30,25), inst(24,21), UInt(0,1))
+   val br_targ = Cat(Fill(12, inst(31)), Fill(8,inst(31)), inst(7), inst(30,25), inst(11,8), 0.U(1.W))
+   val jal_targ= Cat(Fill(12, inst(31)), inst(19,12), inst(20), inst(30,25), inst(24,21), 0.U(1.W))
 
    Mux(is_br, br_targ, jal_targ)
   }
@@ -252,7 +252,7 @@ object AgePriorityEncoder
    {
       val n = in.size
       require (isPow2(n))
-      val temp_vec = (0 until n).map(i => in(i) && UInt(i) >= head) ++ in
+      val temp_vec = (0 until n).map(i => in(i) && i.U >= head) ++ in
       val idx = PriorityEncoder(temp_vec)
       idx(log2Up(n)-1, 0) //discard msb
    }

@@ -193,8 +193,8 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    val clear_store = Wire(Bool())
    clear_store := false.B
 
-   val live_store_mask = Reg(init = UInt(0, num_st_entries))
-   var next_live_store_mask = Mux(clear_store, live_store_mask & ~(UInt(1) << stq_head),
+   val live_store_mask = Reg(init = 0.U(num_st_entries.W))
+   var next_live_store_mask = Mux(clear_store, live_store_mask & ~(1.U << stq_head),
                                                 live_store_mask)
 
    //-------------------------------------------------------------
@@ -208,7 +208,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    {
       when (clear_store)
       {
-         laq_st_dep_mask(i) := laq_st_dep_mask(i) & ~(UInt(1) << stq_head)
+         laq_st_dep_mask(i) := laq_st_dep_mask(i) & ~(1.U << stq_head)
       }
    }
 
@@ -250,7 +250,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
          stq_succeeded(st_enq_idx) := false.B
          stq_committed(st_enq_idx) := false.B
       }
-      next_live_store_mask = Mux(io.dec_st_vals(w), next_live_store_mask | (UInt(1) << st_enq_idx),
+      next_live_store_mask = Mux(io.dec_st_vals(w), next_live_store_mask | (1.U << st_enq_idx),
                                                     next_live_store_mask)
 
       st_enq_idx = Mux(io.dec_st_vals(w), WrapInc(st_enq_idx, num_st_entries),
@@ -366,7 +366,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
                         will_fire_sta_retry ||
                         will_fire_load_retry
    dtlb.io.req.bits.passthrough := false.B // lets status.vm decide
-   dtlb.io.req.bits.vpn := exe_vaddr >> UInt(corePgIdxBits)
+   dtlb.io.req.bits.vpn := exe_vaddr >> corePgIdxBits.U
    dtlb.io.req.bits.instruction := false.B
    dtlb.io.req.bits.store := will_fire_sta_incoming || will_fire_sta_retry
 
@@ -381,8 +381,8 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
                             init=false.B)
    val mem_xcpt_cause = Reg(next=(Mux(io.exe_resp.valid &&
                                       io.exe_resp.bits.mxcpt.valid, io.exe_resp.bits.mxcpt.bits,
-                                  Mux(exe_tlb_uop.is_load,         UInt(rocket.Causes.fault_load),
-                                                                   UInt(rocket.Causes.fault_store)))))
+                                  Mux(exe_tlb_uop.is_load,         rocket.Causes.fault_load.U,
+                                                                   rocket.Causes.fault_store.U))))
 
    assert (!(dtlb.io.req.valid && exe_tlb_uop.is_fence), "Fence is pretending to talk to the TLB")
    assert (!(io.exe_resp.bits.mxcpt.valid && io.exe_resp.valid &&
@@ -514,7 +514,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    }
 
    assert (PopCount(Vec(will_fire_store_commit, will_fire_load_incoming, will_fire_load_retry, will_fire_load_wakeup))
-      <= UInt(1), "Multiple requestors firing to the data cache.")
+      <= 1.U, "Multiple requestors firing to the data cache.")
 
 
 
@@ -668,7 +668,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
       val write_mask = GenByteMask(s_addr, stq_uop(i).mem_typ)
 
       // if overlap on bytes and dword matches, the address conflicts!
-      when (((read_mask & write_mask) =/= UInt(0)) && dword_addr_matches(i))
+      when (((read_mask & write_mask) =/= 0.U) && dword_addr_matches(i))
       {
          ldst_addr_conflicts(i) := true.B
       }
@@ -698,7 +698,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
             (dword_addr_matches(i) &&
 //               (mem_ld_uop.mem_typ =/= stq_uop(i).mem_typ) &&
                (!MemTypesMatch(mem_ld_uop.mem_typ, stq_uop(i).mem_typ)) &&
-               ((read_mask & write_mask) =/= UInt(0))))
+               ((read_mask & write_mask) =/= 0.U)))
       {
          force_ld_to_sleep := true.B
       }
@@ -731,7 +731,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    // Kill load request to mem if address matches (we will either sleep load, or forward data) or TLB miss.
    // Also kill load request if load address matches an older, unexecuted load.
    io.memreq_kill     := (mem_ld_used_tlb && (mem_tlb_miss || Reg(next=pf_ld || ma_ld))) ||
-                         (mem_fired_ld && ldst_addr_conflicts.asUInt() =/= UInt(0)) ||
+                         (mem_fired_ld && ldst_addr_conflicts.asUInt() =/= 0.U) ||
                          (mem_fired_ld && ldld_addr_conflict) ||
                          mem_ld_killed ||
                          (mem_fired_st && io.nack.valid && !io.nack.isload)
@@ -833,7 +833,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
       {
          // does the load depend on this store?
          // TODO CODE REVIEW what's the best way to perform this bit extract?
-         when ((laq_st_dep_mask(i) & (UInt(1) << stq_idx)) =/= UInt(0))
+         when ((laq_st_dep_mask(i) & (1.U << stq_idx)) =/= 0.U)
          {
             when (lcam_is_fence &&
                   l_allocated &&
@@ -863,7 +863,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
                // and if not, then fail OR
                // if it was forwarded but not us, was the forwarded store older than me
                // head < forwarded < youngest?
-               when (((lcam_mask & l_mask) =/= UInt(0)) &&
+               when (((lcam_mask & l_mask) =/= 0.U) &&
                     (!laq_forwarded_std_val(i) ||
                       ((fid =/= stq_idx) && (Cat(stq_idx < yid, stq_idx) > Cat(fid < yid, fid)))))
                {
@@ -891,7 +891,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
                l_addr_val &&
                !l_is_virtual &&
                l_executed &&
-               ((lcam_mask & l_mask) =/= UInt(0)))
+               ((lcam_mask & l_mask) =/= 0.U))
             {
                laq_executed(i)  := false.B
                laq_failure(i)   := true.B
@@ -900,7 +900,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
                ldld_order_fail  := true.B
             }
          }
-         .elsewhen (lcam_ldq_idx =/= UInt(i))
+         .elsewhen (lcam_ldq_idx =/= i.U)
          {
             // Searcher is newer and not itself, should the searching load be
             // put to sleep because of a potential ordering failure?
@@ -909,7 +909,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
                l_addr_val &&
                !l_is_virtual &&
                !l_executed &&
-               ((lcam_mask & l_mask) =/= UInt(0)))
+               ((lcam_mask & l_mask) =/= 0.U))
             {
                // Put younger load to sleep -- otherwise an order failure will occur.
                ldld_addr_conflict := true.B
@@ -920,10 +920,10 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
    // detect which loads get marked as failures, but broadcast to the ROB the oldest failing load
    // TODO encapsulate this in an age-based  priority-encoder
-//   val l_idx = AgePriorityEncoder((Vec(Vec.tabulate(num_ld_entries)(i => failed_loads(i) && UInt(i) >= laq_head)
+//   val l_idx = AgePriorityEncoder((Vec(Vec.tabulate(num_ld_entries)(i => failed_loads(i) && i.U >= laq_head)
 //   ++ failed_loads)).asUInt())
    val temp_bits = (Vec(Vec.tabulate(num_ld_entries)(i =>
-      failed_loads(i) && UInt(i) >= laq_head) ++ failed_loads)).asUInt()
+      failed_loads(i) && i.U >= laq_head) ++ failed_loads)).asUInt()
    val l_idx = PriorityEncoder(temp_bits)
 
    // TODO always pad out the input to PECircular() to pow2
@@ -937,7 +937,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
    val mem_xcpt_uop = Mux(mem_xcpt_valid,
                         mem_tlb_uop,
-                        laq_uop(Mux(l_idx >= UInt(num_ld_entries), l_idx - UInt(num_ld_entries), l_idx)))
+                        laq_uop(Mux(l_idx >= num_ld_entries.U, l_idx - num_ld_entries.U, l_idx)))
    r_xcpt_valid := (failed_loads.reduce(_|_) || mem_xcpt_valid) &&
                    !io.exception &&
                    !IsKilledByBranch(io.brinfo, mem_xcpt_uop)
@@ -969,7 +969,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
             stq_entry_val(i)   := false.B
             saq_val(i)         := false.B
             sdq_val(i)         := false.B
-            stq_uop(i).br_mask := UInt(0)
+            stq_uop(i).br_mask := 0.U
             st_brkilled_mask(i):= true.B
          }
       }
@@ -1139,15 +1139,15 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
    when (reset.toBool || io.exception)
    {
-      laq_head := UInt(0, MEM_ADDR_SZ)
-      laq_tail := UInt(0, MEM_ADDR_SZ)
+      laq_head := 0.U(MEM_ADDR_SZ.W)
+      laq_tail := 0.U(MEM_ADDR_SZ.W)
 
       when (reset.toBool)
       {
-         stq_head := UInt(0, MEM_ADDR_SZ)
-         stq_tail := UInt(0, MEM_ADDR_SZ)
-         stq_commit_head := UInt(0, MEM_ADDR_SZ)
-         stq_execute_head := UInt(0, MEM_ADDR_SZ)
+         stq_head := 0.U(MEM_ADDR_SZ.W)
+         stq_tail := 0.U(MEM_ADDR_SZ.W)
+         stq_commit_head := 0.U(MEM_ADDR_SZ.W)
+         stq_execute_head := 0.U(MEM_ADDR_SZ.W)
 
          for (i <- 0 until num_st_entries)
          {
@@ -1197,8 +1197,8 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
    //-------------------------------------------------------------
 
-   val laq_maybe_full = (laq_allocated.asUInt() =/= UInt(0))
-   val stq_maybe_full = (stq_entry_val.asUInt() =/= UInt(0))
+   val laq_maybe_full = (laq_allocated.asUInt() =/= 0.U)
+   val stq_maybe_full = (stq_entry_val.asUInt() =/= 0.U)
 
    var laq_is_full = false.B
    var stq_is_full = false.B
@@ -1208,10 +1208,10 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    require (isPow2(num_st_entries))
    for (w <- 0 until DECODE_WIDTH)
    {
-      val l_temp = laq_tail + UInt(w)
-      laq_is_full = ((l_temp === laq_head || l_temp === (laq_head + UInt(num_ld_entries))) && laq_maybe_full) | laq_is_full
-      val s_temp = stq_tail + UInt(w+1) // TODO XXX this +1 is almost certainly wrong - look at this again
-      stq_is_full = (s_temp === stq_head || s_temp === (stq_head + UInt(num_st_entries))) | stq_is_full
+      val l_temp = laq_tail + w.U
+      laq_is_full = ((l_temp === laq_head || l_temp === (laq_head + num_ld_entries.U)) && laq_maybe_full) | laq_is_full
+      val s_temp = stq_tail + (w+1).U // TODO XXX this +1 is almost certainly wrong - look at this again
+      stq_is_full = (s_temp === stq_head || s_temp === (stq_head + num_st_entries.U)) | stq_is_full
    }
 
    io.laq_full  := laq_is_full
@@ -1241,7 +1241,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
          val t_laddr = laq_addr(i)
          val t_saddr = saq_addr(i)
          printf("         ldq[%d]=(%c%c%c%c%c%c%c%d) st_dep(%d,m=%x) 0x%x %c %c   saq[%d]=(%c%c%c%c%c%c%c) b:%x 0x%x -> 0x%x %c %c %c %c\n"
-            , UInt(i, MEM_ADDR_SZ)
+            , i.U(MEM_ADDR_SZ.W)
             , Mux(laq_allocated(i), Str("V"), Str("-"))
             , Mux(laq_addr_val(i), Str("A"), Str("-"))
             , Mux(laq_executed(i), Str("E"), Str("-"))
@@ -1254,10 +1254,10 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
             , laq_st_dep_mask(i)
             , t_laddr(19,0)
 
-            , Mux(laq_head === UInt(i), Str("H"), Str(" "))
-            , Mux(laq_tail=== UInt(i), Str("T"), Str(" "))
+            , Mux(laq_head === i.U, Str("H"), Str(" "))
+            , Mux(laq_tail=== i.U, Str("T"), Str(" "))
 
-            , UInt(i, MEM_ADDR_SZ)
+            , i.U(MEM_ADDR_SZ.W)
             , Mux(stq_entry_val(i), Str("V"), Str("-"))
             , Mux(saq_val(i), Str("A"), Str("-"))
             , Mux(sdq_val(i), Str("D"), Str("-"))
@@ -1269,10 +1269,10 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
             , t_saddr(19,0)
             , sdq_data(i)
 
-            , Mux(stq_head === UInt(i), Str("H"), Str(" "))
-            , Mux(stq_execute_head === UInt(i), Str("E"), Str(" "))
-            , Mux(stq_commit_head === UInt(i), Str("C"), Str(" "))
-            , Mux(stq_tail=== UInt(i), Str("T"), Str(" "))
+            , Mux(stq_head === i.U, Str("H"), Str(" "))
+            , Mux(stq_execute_head === i.U, Str("E"), Str(" "))
+            , Mux(stq_commit_head === i.U, Str("C"), Str(" "))
+            , Mux(stq_tail=== i.U, Str("T"), Str(" "))
          )
       }}
 }
@@ -1284,11 +1284,11 @@ object GenByteMask
    def apply(addr: UInt, typ: UInt): UInt =
    {
       val mask = Wire(UInt(8.W))
-      mask := MuxCase(UInt(255,8), Array(
-                   (typ === rocket.MT_B || typ === rocket.MT_BU) -> (UInt(1, 8) << addr(2,0)),
-                   (typ === rocket.MT_H || typ === rocket.MT_HU) -> (UInt(3, 8) << (addr(2,1) << UInt(1))),
-                   (typ === rocket.MT_W || typ === rocket.MT_WU) -> Mux(addr(2), UInt(240, 8), UInt(15, 8)),
-                   (typ === rocket.MT_D)                  -> UInt(255, 8)))
+      mask := MuxCase(255.U(8.W), Array(
+                   (typ === rocket.MT_B || typ === rocket.MT_BU) -> (1.U(8.W) << addr(2,0)),
+                   (typ === rocket.MT_H || typ === rocket.MT_HU) -> (3.U(8.W) << (addr(2,1) << 1.U)),
+                   (typ === rocket.MT_W || typ === rocket.MT_WU) -> Mux(addr(2), 240.U(8.W), 15.U(8.W)),
+                   (typ === rocket.MT_D)                  -> 255.U(8.W)))
       mask
    }
 }
@@ -1333,21 +1333,21 @@ class ForwardingAgeLogic(num_entries: Int)(implicit p: Parameters) extends BoomM
    for (i <- 0 until num_entries)
    {
       age_mask(i) := true.B
-      when (UInt(i) >= io.youngest_st_idx) // currently the tail points PAST last store, so use >=
+      when (i.U >= io.youngest_st_idx) // currently the tail points PAST last store, so use >=
       {
          age_mask(i) := false.B
       }
    }
 
    // Priority encoder with moving tail: double length
-   val matches = Wire(UInt(width = 2*num_entries))
+   val matches = Wire(UInt((2*num_entries).W))
    matches := Cat(io.addr_matches & age_mask.asUInt(),
                   io.addr_matches)
 
 
    val found_match = Wire(Bool())
    found_match       := false.B
-   io.forwarding_idx := UInt(0)
+   io.forwarding_idx := 0.U
 
    // look for youngest, approach from the oldest side, let the last one found stick
    for (i <- 0 until (2*num_entries))
@@ -1355,7 +1355,7 @@ class ForwardingAgeLogic(num_entries: Int)(implicit p: Parameters) extends BoomM
       when (matches(i))
       {
          found_match := true.B
-         io.forwarding_idx := UInt(i % num_entries)
+         io.forwarding_idx := (i % num_entries).U
       }
    }
 

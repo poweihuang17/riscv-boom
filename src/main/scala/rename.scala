@@ -60,7 +60,7 @@ class RenameMapTableElement(pipeline_width: Int)(implicit p: Parameters) extends
    // out in the meantime. A software solution is also possible, but I'm
    // unwilling to trust that.
 
-   val element = Reg(init = UInt(0, PREG_SZ))
+   val element = Reg(init = 0.U(PREG_SZ.W))
 
    // handle branch speculation
    val element_br_copies = Mem(MAX_BR_COUNT, UInt(PREG_SZ.W))
@@ -77,7 +77,7 @@ class RenameMapTableElement(pipeline_width: Int)(implicit p: Parameters) extends
 
    for (w <- 0 until pipeline_width)
    {
-      var elm_cases = Array((false.B,  UInt(0,PREG_SZ)))
+      var elm_cases = Array((false.B,  0.U(PREG_SZ.W)))
 
       for (xx <- w to 0 by -1)
       {
@@ -110,7 +110,7 @@ class RenameMapTableElement(pipeline_width: Int)(implicit p: Parameters) extends
 
    if (ENABLE_COMMIT_MAP_TABLE)
    {
-      val committed_element = Reg(init=UInt(0,PREG_SZ))
+      val committed_element = Reg(init=0.U(PREG_SZ.W))
       when (io.commit_wen)
       {
          committed_element := io.commit_pdst
@@ -184,7 +184,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
    val io = IO(new FreeListIo(num_phys_registers, pl_width))
 
    // ** FREE LIST TABLE ** //
-   val free_list = Reg(init=(~Bits(1,num_phys_registers)))
+   val free_list = Reg(init=(~(1.U(num_phys_registers.W))))
 
    // track all allocations that have occurred since branch passed by
    // can quickly reset pipeline on branch mispredict
@@ -241,7 +241,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
    // ** Set requested PREG to "Not Free" ** //
 
    // bit vector of newly allocated physical registers
-   var just_allocated_mask = Bits(0, num_phys_registers)
+   var just_allocated_mask = 0.U(num_phys_registers.W)
 
    // track which allocation_lists just got cleared out by a branch,
    // to enforce a write priority to allocation_lists()
@@ -275,14 +275,14 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
    // ** Set enqueued PREG to "Free" ** //
    for (w <- 0 until pl_width)
    {
-      enq_mask(w) := Bits(0,num_phys_registers)
+      enq_mask(w) := 0.U(num_phys_registers.W)
       when (io.enq_vals(w))
       {
-         enq_mask(w) := UInt(1) << io.enq_pregs(w)
+         enq_mask(w) := 1.U << io.enq_pregs(w)
       }
       .elsewhen (io.rollback_wens(w))
       {
-         enq_mask(w) := UInt(1) << io.rollback_pdsts(w)
+         enq_mask(w) := 1.U << io.rollback_pdsts(w)
       }
    }
 
@@ -316,18 +316,18 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
    // allowing for a single-cycle reset of the rename state on a pipeline flush.
    if (ENABLE_COMMIT_MAP_TABLE)
    {
-      val committed_free_list = Reg(init=(~Bits(1,num_phys_registers)))
+      val committed_free_list = Reg(init=(~1.U(num_phys_registers.W)))
 
       val com_mask = Wire(Vec(pl_width, Bits(num_phys_registers.W)))
       val stale_mask = Wire(Vec(pl_width, Bits(num_phys_registers.W)))
       for (w <- 0 until pl_width)
       {
-         com_mask(w) := Bits(0,width=num_phys_registers)
-         stale_mask(w) := Bits(0,width=num_phys_registers)
+         com_mask(w) := 0.U(num_phys_registers.W)
+         stale_mask(w) := 0.U(num_phys_registers.W)
          when (io.com_wens(w))
          {
-            com_mask(w) := UInt(1) << io.com_uops(w).pdst
-            stale_mask(w) := UInt(1) << io.com_uops(w).stale_pdst
+            com_mask(w) := 1.U << io.com_uops(w).pdst
+            stale_mask(w) := 1.U << io.com_uops(w).stale_pdst
          }
       }
 
@@ -399,7 +399,7 @@ class BusyTable(pipeline_width:Int, num_read_ports:Int, num_wb_ports:Int)(implic
 
    for (w <- 0 until pipeline_width)
    {
-      when (io.allocated_pdst(w).valid && io.allocated_pdst(w).bits =/= UInt(0))
+      when (io.allocated_pdst(w).valid && io.allocated_pdst(w).bits =/= 0.U)
       {
          table_bsy(io.allocated_pdst(w).bits) := BUSY
       }
@@ -497,7 +497,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
 
       for (w <- 0 until pl_width)
       {
-         map_table_io(i).wens(w)        := io.ren_uops(w).ldst === UInt(i) &&
+         map_table_io(i).wens(w)        := io.ren_uops(w).ldst === i.U &&
                                            io.ren_mask(w) &&
                                            io.ren_uops(w).ldst_val &&
                                            (io.ren_uops(w).dst_rtype === RT_FIX ||
@@ -556,7 +556,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
       if (max_operands > 2)
          map_table_prs3(w) := map_table_io(io.ren_uops(w).lrs3).element
       else
-         map_table_prs3(w) := UInt(0)
+         map_table_prs3(w) := 0.U
    }
 
    // Bypass the physical register mappings
@@ -566,10 +566,10 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
 
    for (w <- 0 until pl_width)
    {
-      var rs1_cases =  Array((false.B,  UInt(0,PREG_SZ)))
-      var rs2_cases =  Array((false.B,  UInt(0,PREG_SZ)))
-      var rs3_cases =  Array((false.B,  UInt(0,PREG_SZ)))
-      var stale_cases= Array((false.B,  UInt(0,PREG_SZ)))
+      var rs1_cases =  Array((false.B,  0.U(PREG_SZ.W)))
+      var rs2_cases =  Array((false.B,  0.U(PREG_SZ.W)))
+      var rs3_cases =  Array((false.B,  0.U(PREG_SZ.W)))
+      var stale_cases= Array((false.B,  0.U(PREG_SZ.W)))
 
       prs1_was_bypassed(w) := false.B
       prs2_was_bypassed(w) := false.B
@@ -596,11 +596,11 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
 
       // add default case where we can just read the map table for our information
       rs1_cases ++= Array(((io.ren_uops(w).lrs1_rtype === RT_FIX || io.ren_uops(w).lrs1_rtype === RT_FLT) &&
-                           (io.ren_uops(w).lrs1 =/= UInt(0)), map_table_prs1(w)))
+                           (io.ren_uops(w).lrs1 =/= 0.U), map_table_prs1(w)))
       rs2_cases ++= Array(((io.ren_uops(w).lrs2_rtype === RT_FIX || io.ren_uops(w).lrs2_rtype === RT_FLT) &&
-                           (io.ren_uops(w).lrs2 =/= UInt(0)), map_table_prs2(w)))
+                           (io.ren_uops(w).lrs2 =/= 0.U), map_table_prs2(w)))
       rs3_cases ++= Array((io.ren_uops(w).frs3_en  && 
-                           (io.ren_uops(w).lrs3 =/= UInt(0)), map_table_prs3(w)))
+                           (io.ren_uops(w).lrs3 =/= 0.U), map_table_prs3(w)))
 
       io.ren_uops(w).pop1                       := MuxCase(io.ren_uops(w).lrs1, rs1_cases)
       io.ren_uops(w).pop2                       := MuxCase(io.ren_uops(w).lrs2, rs2_cases)
@@ -680,7 +680,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
       {
          freelist.io.enq_vals(w)    := io.com_valids(w) &&
                                        (io.com_uops(w).dst_rtype === RT_FIX || io.com_uops(w).dst_rtype === RT_FLT) &&
-                                       (io.com_uops(w).stale_pdst =/= UInt(0))
+                                       (io.com_uops(w).stale_pdst =/= 0.U)
          freelist.io.enq_pregs(w)   := io.com_uops(w).stale_pdst
 
          freelist.io.ren_br_vals(w) := ren_br_vals(w)
@@ -689,12 +689,12 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
          freelist_can_allocate(w)   := freelist.io.can_allocate(w)
 
          freelist.io.rollback_wens(w)  := io.com_rbk_valids(w) &&
-                                        (io.com_uops(w).pdst =/= UInt(0)) &&
+                                        (io.com_uops(w).pdst =/= 0.U) &&
                                         (io.com_uops(w).dst_rtype === RT_FIX || io.com_uops(w).dst_rtype === RT_FLT)
          freelist.io.rollback_pdsts(w) := io.com_uops(w).pdst
 
          freelist.io.com_wens(w)    := io.com_valids(w) &&
-                                       (io.com_uops(w).pdst =/= UInt(0)) &&
+                                       (io.com_uops(w).pdst =/= 0.U) &&
                                        (io.com_uops(w).dst_rtype === RT_FIX || io.com_uops(w).dst_rtype === RT_FLT)
          freelist.io.com_uops(w)    := io.com_uops(w)
       }
@@ -708,7 +708,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
    // x0 is a special-case and should not be renamed
    for (w <- 0 until pl_width)
    {
-      io.ren_uops(w).pdst := Mux(io.ren_uops(w).ldst === UInt(0), UInt(0), freelist_req_pregs(w))
+      io.ren_uops(w).pdst := Mux(io.ren_uops(w).ldst === 0.U, 0.U, freelist_req_pregs(w))
    }
 
 

@@ -32,14 +32,14 @@ object FUConstants
    // bit mask, since a given execution pipeline may support multiple functional units
    val FUC_SZ = 8
    val FU_X   = BitPat.DC(FUC_SZ)
-   val FU_ALU = UInt(  1, FUC_SZ)
-   val FU_BRU = UInt(  2, FUC_SZ)
-   val FU_MEM = UInt(  4, FUC_SZ)
-   val FU_MUL = UInt(  8, FUC_SZ)
-   val FU_DIV = UInt( 16, FUC_SZ)
-   val FU_FPU = UInt( 32, FUC_SZ)
-   val FU_CSR = UInt( 64, FUC_SZ)
-   val FU_FDV = UInt(128, FUC_SZ)
+   val FU_ALU =   1.U(FUC_SZ.W)
+   val FU_BRU =   2.U(FUC_SZ.W)
+   val FU_MEM =   4.U(FUC_SZ.W)
+   val FU_MUL =   8.U(FUC_SZ.W)
+   val FU_DIV =  16.U(FUC_SZ.W)
+   val FU_FPU =  32.U(FUC_SZ.W)
+   val FU_CSR =  64.U(FUC_SZ.W)
+   val FU_FDV = 128.U(FUC_SZ.W)
 }
 import FUConstants._
 
@@ -266,20 +266,20 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
    {
       op1_data = Mux(io.req.bits.uop.ctrl.op1_sel.toUInt === OP1_RS1 , io.req.bits.rs1_data,
                  Mux(io.req.bits.uop.ctrl.op1_sel.toUInt === OP1_PC  , Sext(io.get_rob_pc.curr_pc, xLen),
-                                                                       UInt(0)))
+                                                                       0.U))
    }
    else
    {
       op1_data = Mux(io.req.bits.uop.ctrl.op1_sel.toUInt === OP1_RS1 , io.req.bits.rs1_data,
-                                                                       UInt(0))
+                                                                       0.U)
    }
 
    // operand 2 select
    val op2_data = Mux(io.req.bits.uop.ctrl.op2_sel === OP2_IMM,  Sext(imm_xprlen.toUInt, xLen),
                   Mux(io.req.bits.uop.ctrl.op2_sel === OP2_IMMC, io.req.bits.uop.pop1(4,0),
                   Mux(io.req.bits.uop.ctrl.op2_sel === OP2_RS2 , io.req.bits.rs2_data,
-                  Mux(io.req.bits.uop.ctrl.op2_sel === OP2_FOUR, UInt(4),
-                                                                 UInt(0)))))
+                  Mux(io.req.bits.uop.ctrl.op2_sel === OP2_FOUR, 4.U,
+                                                                 0.U))))
 
    val alu = Module(new rocket.ALU())
 
@@ -315,7 +315,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
       val br_lt  = (~(rs1(xLen-1) ^ rs2(xLen-1)) & br_ltu |
                       rs1(xLen-1) & ~rs2(xLen-1)).toBool
 
-      val pc_plus4 = (uop_pc_ + UInt(4))(vaddrBits,0)
+      val pc_plus4 = (uop_pc_ + 4.U)(vaddrBits,0)
 
       val pc_sel = MuxLookup(io.req.bits.uop.ctrl.br_type, PC_PLUS4,
                Seq  (   BR_N  -> PC_PLUS4,
@@ -426,7 +426,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
       // note: jal doesn't allocate a branch-mask, so don't clear a br-mask bit
       brinfo.valid          := io.req.valid && uop.is_br_or_jmp && !uop.is_jal && !killed
       brinfo.mispredict     := mispredict
-      brinfo.mask           := UInt(1) << uop.br_tag
+      brinfo.mask           := 1.U << uop.br_tag
       brinfo.exe_mask       := GetNewBrMask(io.brinfo, uop.br_mask)
       brinfo.tag            := uop.br_tag
       brinfo.rob_idx        := uop.rob_idx
@@ -461,7 +461,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
 
       br_unit.btb_update.pc               := fetch_pc // tell the BTB which pc to tag check against
       br_unit.btb_update.br_pc            := uop_pc_
-      br_unit.btb_update.target           := (br_unit.target.toSInt & SInt(-coreInstBytes)).toUInt
+      br_unit.btb_update.target           := (br_unit.target.toSInt & (-coreInstBytes).S).toUInt
       br_unit.btb_update.prediction.valid := io.get_pred.info.btb_resp_valid // did this branch's fetch packet have
                                                                              // a BTB hit in fetch?
       br_unit.btb_update.prediction.bits  := io.get_pred.info.btb_resp       // give the BTB back its BTBResp
@@ -496,8 +496,8 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
 
       // is the br_pc the last instruction in the fetch bundle?
       val is_last_inst = if (FETCH_WIDTH == 1) { true.B }
-                         else { ((uop_pc_ >> UInt(log2Up(coreInstBytes))) &
-                                 Fill(log2Up(FETCH_WIDTH), UInt(1))) === UInt(FETCH_WIDTH-1) }
+                         else { ((uop_pc_ >> log2Up(coreInstBytes).U) &
+                                 Fill(log2Up(FETCH_WIDTH), 1.U)) === (FETCH_WIDTH-1).U }
       br_unit.bpd_update.bits.new_pc_same_packet := !(is_taken) && !is_last_inst
 
       require (coreInstBytes == 4)
@@ -511,8 +511,8 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
          // (VA is bad if VA(rc.as.vaddrBits) =/= VA(rc.as.vaddrBits-1))
          val a = a0 >> vaddrBits-1
          val e = ea(vaddrBits,vaddrBits-1)
-         Mux(a === UInt(0) || a === UInt(1), e =/= UInt(0),
-         Mux(a.toSInt === SInt(-1) || a.toSInt === SInt(-2), e.toSInt === SInt(-1),
+         Mux(a === 0.U || a === 1.U, e =/= 0.U,
+         Mux(a.toSInt === (-1).S || a.toSInt === (-2).S, e.toSInt === (-1).S,
             e(0)))
       }
 
@@ -520,7 +520,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
       val bj_offset = imm_xprlen(20,0).toSInt
       val bj64 = (bj_base.toSInt + bj_offset).toUInt
       val bj_msb = Mux(uop.uopc === uopJALR, vaSign(io.req.bits.rs1_data, bj64.toUInt), vaSign(uop_pc_, bj64.toUInt))
-      bj_addr := (Cat(bj_msb, bj64(vaddrBits-1,0)).toSInt & SInt(-2)).toUInt
+      bj_addr := (Cat(bj_msb, bj64(vaddrBits-1,0)).toSInt & (-2).S).toUInt
 
       br_unit.pc             := uop_pc_
       br_unit.debug_btb_pred := io.get_pred.info.btb_resp_valid && io.get_pred.info.btb_resp.taken
@@ -529,7 +529,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
       // TODO BUG only trip xcpt if taken to bj_addr
       br_unit.xcpt.valid     := bj_addr(1) && io.req.valid && mispredict && !killed
       br_unit.xcpt.bits.uop  := uop
-      br_unit.xcpt.bits.cause:= UInt(rocket.Causes.misaligned_fetch)
+      br_unit.xcpt.bits.cause:= rocket.Causes.misaligned_fetch.U
       // TODO is there a better way to get this information to the CSR file? maybe use brinfo.target?
       br_unit.xcpt.bits.badvaddr:= bj_addr
 
@@ -581,8 +581,8 @@ class MemAddrCalcUnit(implicit p: Parameters) extends PipelinedFunctionalUnit(nu
 {
    // perform address calculation
    val sum = (io.req.bits.rs1_data.toSInt + io.req.bits.uop.imm_packed(19,8).toSInt).toUInt
-   val ea_sign = Mux(sum(vaddrBits-1), ~sum(63,vaddrBits) === UInt(0),
-                                        sum(63,vaddrBits) =/= UInt(0))
+   val ea_sign = Mux(sum(vaddrBits-1), ~sum(63,vaddrBits) === 0.U,
+                                        sum(63,vaddrBits) =/= 0.U)
    val effective_address = Cat(ea_sign, sum(vaddrBits-1,0)).toUInt
 
    // compute store data
@@ -607,16 +607,16 @@ class MemAddrCalcUnit(implicit p: Parameters) extends PipelinedFunctionalUnit(nu
    // Handle misaligned exceptions
    val typ = io.req.bits.uop.mem_typ
    val misaligned =
-      (((typ === rocket.MT_H) || (typ === rocket.MT_HU)) && (effective_address(0) =/= UInt(0))) ||
-      (((typ === rocket.MT_W) || (typ === rocket.MT_WU)) && (effective_address(1,0) =/= UInt(0))) ||
-      ((typ ===  rocket.MT_D) && (effective_address(2,0) =/= UInt(0)))
+      (((typ === rocket.MT_H) || (typ === rocket.MT_HU)) && (effective_address(0) =/= 0.U)) ||
+      (((typ === rocket.MT_W) || (typ === rocket.MT_WU)) && (effective_address(1,0) =/= 0.U)) ||
+      ((typ ===  rocket.MT_D) && (effective_address(2,0) =/= 0.U))
 
    val ma_ld = io.req.valid && io.req.bits.uop.uopc === uopLD && misaligned
    val ma_st = io.req.valid && (io.req.bits.uop.uopc === uopSTA || io.req.bits.uop.uopc === uopAMO_AG) && misaligned
 
    io.resp.bits.mxcpt.valid := ma_ld || ma_st
-   io.resp.bits.mxcpt.bits  := Mux(ma_ld, UInt(rocket.Causes.misaligned_load),
-                                          UInt(rocket.Causes.misaligned_store))
+   io.resp.bits.mxcpt.bits  := Mux(ma_ld, rocket.Causes.misaligned_load.U,
+                                          rocket.Causes.misaligned_store.U)
    assert (!(ma_ld && ma_st), "Mutually-exclusive exceptions are firing.")
 }
 

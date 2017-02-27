@@ -156,7 +156,7 @@ abstract class BrPredictor(fetch_width: Int, val history_length: Int)(implicit p
    // TODO abstract this away so nobody knows which they are using.
    val r_vlh = new VeryLongHistoryRegister(history_length, VLHR_LENGTH)
 
-   val in_usermode = io.status_prv === UInt(rocket.PRV.U)
+   val in_usermode = io.status_prv === rocket.PRV.U.U
    val disable_bpd = in_usermode && ENABLE_BPD_UMODE_ONLY.B
 
    val ghistory_all =
@@ -256,7 +256,7 @@ abstract class BrPredictor(fetch_width: Int, val history_length: Int)(implicit p
    commit := brob.io.commit_entry
 
    // TODO add this back in (perhaps just need to initialize mispredicted array?)
-//   assert ((~commit.bits.executed.asUInt() & commit.bits.mispredicted.asUInt()) === Bits(0),
+//   assert ((~commit.bits.executed.asUInt() & commit.bits.mispredicted.asUInt()) === 0.U,
 //      "[BrPredictor] the BROB is marking a misprediction for something that didn't execute.")
 
    // This shouldn't happen, unless a branch instruction was also marked to flush after it commits.
@@ -282,10 +282,10 @@ abstract class BrPredictor(fetch_width: Int, val history_length: Int)(implicit p
 class HistoryRegister(length: Int)
 {
    // the (speculative) global history register. Needs to be massaged before usably by the bpd.
-   private val r_history = Reg(init = Bits(0, width = length))
+   private val r_history = Reg(init = 0.U(length.W))
    // we need to maintain a copy of the commit history, in-case we need to
    // reset it on a pipeline flush/replay.
-   private val r_commit_history = Reg(init = Bits(0, width = length))
+   private val r_commit_history = Reg(init = 0.U(length.W))
 
    def commit_copy(): UInt = r_commit_history
 
@@ -294,7 +294,7 @@ class HistoryRegister(length: Int)
       resolution.history match
       {
          case Some(history: UInt) => history
-         case _ => UInt(0) // enable vlhr
+         case _ => 0.U // enable vlhr
       }
    }
 
@@ -303,7 +303,7 @@ class HistoryRegister(length: Int)
       resolution.history_u match
       {
          case Some(history_u: UInt) => history_u
-         case _ => UInt(0) // enable vlhr
+         case _ => 0.U // enable vlhr
       }
    }
 
@@ -384,16 +384,16 @@ class VeryLongHistoryRegister(hlen: Int, vlhr_len: Int)
 {
    // we need to provide extra bits for speculating past the commit-head of the buffer.
    private val plen = vlhr_len
-   private val hist_buffer = Reg(init = UInt(0, plen))
+   private val hist_buffer = Reg(init = 0.U(plen.W))
    // the speculative head point to the next empty spot (head-1 is the newest bit).
-   private val spec_head = Reg(init = UInt(0, width = log2Up(plen)))
-   private val com_head = Reg(init = UInt(0, width = log2Up(plen)))
+   private val spec_head = Reg(init = 0.U(log2Up(plen).W))
+   private val com_head = Reg(init = 0.U(log2Up(plen).W))
 
    // the tail points to the last (oldest) bit in the history.
    private val com_tail =
-      Mux(com_head >= UInt(hlen),
-         com_head - UInt(hlen),
-         UInt(plen) - (UInt(hlen) - com_head))
+      Mux(com_head >= hlen.U,
+         com_head - hlen.U,
+         plen.U - (hlen.U - com_head))
 
 
    // logical_idx is relative to the logical history, not the physical buffer.
@@ -465,7 +465,7 @@ class VeryLongHistoryRegister(hlen: Int, vlhr_len: Int)
       .elsewhen (br_resolution_valid && br_resolution_bits.mispredict)
       {
          val snapshot_ptr = br_resolution_bits.history_ptr
-         assert (snapshot_ptr <= UInt(plen), "[brpredictor] VLHR: snapshot is out-of-bounds.")
+         assert (snapshot_ptr <= plen.U, "[brpredictor] VLHR: snapshot is out-of-bounds.")
          hist_buffer := hist_buffer.bitSet(snapshot_ptr, br_resolution_bits.taken)
          spec_head := WrapInc(snapshot_ptr, plen)
       }
@@ -479,7 +479,7 @@ class VeryLongHistoryRegister(hlen: Int, vlhr_len: Int)
    def commit(taken: Bool): Unit =
    {
       assert(com_head =/= spec_head, "[brpredictor] VLHR: commit head is moving ahead of the spec head.")
-      val debug_com_bit = (hist_buffer >> com_head) & UInt(1,1)
+      val debug_com_bit = (hist_buffer >> com_head) & 1.U(1.W)
       assert (debug_com_bit  === taken, "[brpredictor] VLHR: commit bit doesn't match speculative bit.")
       com_head := WrapInc(com_head, plen)
    }
@@ -626,14 +626,14 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
    val entries_ctrl = Reg(Vec(num_entries, new BrobEntryMetaData(fetch_width)))
    val entries_info = SeqMem(num_entries, new BpdResp)
 
-   val head_ptr = Reg(init = UInt(0, log2Up(num_entries)))
-   val tail_ptr = Reg(init = UInt(0, log2Up(num_entries)))
+   val head_ptr = Reg(init = 0.U(log2Up(num_entries).W))
+   val tail_ptr = Reg(init = 0.U(log2Up(num_entries).W))
 
    val r_bpd_update = RegNext(io.backend.bpd_update)
 
    private def GetIdx(addr: UInt) =
-      if (fetch_width == 1) UInt(0)
-      else (addr >> UInt(log2Ceil(coreInstBytes))) & Fill(log2Ceil(fetch_width), UInt(1))
+      if (fetch_width == 1) 0.U
+      else (addr >> log2Ceil(coreInstBytes).U) & Fill(log2Ceil(fetch_width), 1.U)
 
    // -----------------------------------------------
    when (io.backend.allocate.valid)
@@ -672,7 +672,7 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
          // (as they are on the misspeculated path)
          for (w <- 0 until fetch_width)
          {
-            when (UInt(w) > idx)
+            when (w.U > idx)
             {
                entries_ctrl(r_bpd_update.bits.brob_idx).executed(w) := false.B
                entries_ctrl(r_bpd_update.bits.brob_idx).mispredicted(w) := false.B
@@ -689,8 +689,8 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
    // need to spend two cycles flushing to catch this scenario.
    when (io.backend.flush || RegNext(io.backend.flush))
    {
-      head_ptr := UInt(0)
-      tail_ptr := UInt(0)
+      head_ptr := 0.U
+      tail_ptr := 0.U
    }
 
    // -----------------------------------------------
@@ -716,7 +716,7 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
       for (i <- 0 until num_entries)
       {
          printf (" brob[%d] (%x) T=%x m=%x r=%d snapshot=%d "
-            , UInt(i, log2Up(num_entries))
+            , i.U(log2Up(num_entries).W)
             , entries_ctrl(i).executed.asUInt()
             , entries_ctrl(i).taken.asUInt()
             , entries_ctrl(i).mispredicted.asUInt()
@@ -725,13 +725,13 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
             )
          printf("%c\n"
          // chisel3 lacks %s support
-            ,  Mux(head_ptr === UInt(i) && tail_ptr === UInt(i), Str("B"),
-               Mux(head_ptr === UInt(i),                         Str("H"),
-               Mux(tail_ptr === UInt(i),                         Str("T"),
+            ,  Mux(head_ptr === i.U && tail_ptr === i.U, Str("B"),
+               Mux(head_ptr === i.U,                         Str("H"),
+               Mux(tail_ptr === i.U,                         Str("T"),
                                                                  Str(" "))))
-//            ,  Mux(head_ptr === UInt(i) && tail_ptr === UInt(i), Str("<-HEAD TL"),
-//               Mux(head_ptr === UInt(i),                         Str("<-HEAD   "),
-//               Mux(tail_ptr === UInt(i),                         Str("<-     TL"),
+//            ,  Mux(head_ptr === i.U && tail_ptr === i.U, Str("<-HEAD TL"),
+//               Mux(head_ptr === i.U,                         Str("<-HEAD   "),
+//               Mux(tail_ptr === i.U,                         Str("<-     TL"),
 //                                                                 Str(" "))))
             )
       }

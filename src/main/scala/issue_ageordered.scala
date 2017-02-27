@@ -40,17 +40,17 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
    {
       val next = Wire(UInt(max.W))
       next := count_oh
-      when (count_oh === UInt(0) && inc)
+      when (count_oh === 0.U && inc)
       {
-         next := UInt(1)
+         next := 1.U
       }
       .elsewhen (!count_oh(max-1) && inc)
       {
-         next := (count_oh << UInt(1))
+         next := (count_oh << 1.U)
       }
       next
    }
-   shamts_oh(0) := UInt(0)
+   shamts_oh(0) := 0.U
    for (i <- 1 until num_issue_slots + DISPATCH_WIDTH)
    {
       shamts_oh(i) := SaturatingCounterOH(shamts_oh(i-1), vacants(i-1), MAX_SHIFT)
@@ -72,7 +72,7 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
       issue_slots(i).in_uop.bits  := uops(i+1)
       for (j <- 1 to MAX_SHIFT by 1)
       {
-         when (shamts_oh(i+j) === UInt(1 << (j-1)))
+         when (shamts_oh(i+j) === (1 << (j-1)).U)
          {
             issue_slots(i).in_uop.valid := will_be_valid(i+j)
             issue_slots(i).in_uop.bits  := uops(i+j)
@@ -81,7 +81,7 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
       issue_slots(i).wakeup_dsts  := io.wakeup_pdsts
       issue_slots(i).brinfo       := io.brinfo
       issue_slots(i).kill         := io.flush_pipeline
-      issue_slots(i).clear        := shamts_oh(i) =/= UInt(0)
+      issue_slots(i).clear        := shamts_oh(i) =/= 0.U
    }
 
    //-------------------------------------------------------------
@@ -93,7 +93,7 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
    val num_available = PopCount(will_be_available)
    for (w <- 0 until DISPATCH_WIDTH)
    {
-      io.dis_readys(w) := RegNext(num_available > UInt(w))
+      io.dis_readys(w) := RegNext(num_available > w.U)
    }
 
    //-------------------------------------------------------------
@@ -105,9 +105,9 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
       io.iss_valids(w) := false.B
       io.iss_uops(w)   := NullMicroOp
       // unsure if this is overkill
-      io.iss_uops(w).pop1 := UInt(0)
-      io.iss_uops(w).pop2 := UInt(0)
-      io.iss_uops(w).pop3 := UInt(0)
+      io.iss_uops(w).pop1 := 0.U
+      io.iss_uops(w).pop2 := 0.U
+      io.iss_uops(w).pop3 := 0.U
       io.iss_uops(w).lrs1_rtype := RT_X
       io.iss_uops(w).lrs2_rtype := RT_X
    }
@@ -126,7 +126,7 @@ class IssueUnitCollasping(num_issue_slots: Int, issue_width: Int, num_wakeup_por
 
       for (w <- 0 until issue_width)
       {
-         val can_allocate = (issue_slots(i).uop.fu_code & io.fu_types(w)) =/= UInt(0)
+         val can_allocate = (issue_slots(i).uop.fu_code & io.fu_types(w)) =/= 0.U
 
          when (requests(i) && !uop_issued && can_allocate && !port_issued(w))
          {

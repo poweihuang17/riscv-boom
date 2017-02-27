@@ -53,8 +53,8 @@ class TageTagMemory(
       def InitializeIo(dummy: Int=0) =
       {
          this.w_en := false.B
-         this.w_idx := UInt(0)
-         this.w_data := UInt(0)
+         this.w_idx := 0.U
+         this.w_data := 0.U
       }
    })
 

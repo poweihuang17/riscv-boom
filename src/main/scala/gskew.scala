@@ -109,14 +109,14 @@ class GSkewBrPredictor(fetch_width: Int,
       }
       else
       {
-         var res = UInt(0,clen)
+         var res = 0.U(clen.W)
          var remaining = input.toUInt
          for (i <- 0 to hlen-1 by clen)
          {
             val len = if (i + clen > hlen ) (hlen - i) else clen
             require(len > 0)
             res = res(clen-1,0) ^ remaining(len-1,0)
-            remaining = remaining >> UInt(len)
+            remaining = remaining >> len.U
          }
          res
       }
@@ -124,9 +124,9 @@ class GSkewBrPredictor(fetch_width: Int,
 
    private def BimoIdxHash (addr: UInt, h: UInt, w: Int) =
    {
-      //(addr >> UInt(shamt)) ^ Cat(hist(3,0), UInt(0,2))
-      val a = addr >> UInt(shamt)
-      val z      = UInt(0,32) // unused - a from two cycles ago.
+      //(addr >> shamt.U) ^ Cat(hist(3,0), 0.U(2.W))
+      val a = addr >> shamt.U
+      val z      = 0.U(32.W) // unused - a from two cycles ago.
 
       val i10_5  = Cat(h(3,0), a(8,7)) // word-line address
       val i13_11 = Cat(a(11), a(9)^a(5), a(10)^a(6))
@@ -139,9 +139,9 @@ class GSkewBrPredictor(fetch_width: Int,
 
    private def Gsh0IdxHash (addr: UInt, h: UInt, w: Int) =
    {
-      val a = addr >> UInt(shamt)
-      val z      = UInt(0,32) // unused - a from two cycles ago.
-//      (addr >> UInt(shamt)) ^ Cat(hist, UInt(0,1))
+      val a = addr >> shamt.U
+      val z      = 0.U(32.W) // unused - a from two cycles ago.
+//      (addr >> shamt.U) ^ Cat(hist, 0.U(1.W))
       val i15_11 = Cat(h(7)^h(11), h(8)^h(12), h(4)^h(5), a(9)^h(9), h(10)^h(6))
       val i10_5  = Cat(h(3,0), a(8,7)) // word-line address
       val i4_2   = Cat(a(4)^a(9)^a(13)^a(12)^h(5)^h(11)^h(8)^z(5),
@@ -155,9 +155,9 @@ class GSkewBrPredictor(fetch_width: Int,
 
    private def Gsh1IdxHash (addr: UInt, h: UInt, w: Int) =
    {
-      val a = addr >> UInt(shamt)
-      val z      = UInt(0,32) // unused - a from two cycles ago.
-//      (addr >> UInt(shamt)) ^ Fold(hist, gsh1_idx_sz)
+      val a = addr >> shamt.U
+      val z      = 0.U(32.W) // unused - a from two cycles ago.
+//      (addr >> shamt.U) ^ Fold(hist, gsh1_idx_sz)
       val i15_11 = Cat(h(19)^h(12), h(18)^h(11), h(17)^h(10), h(16)^h(4), h(15)^h(20))
       val i10_5  = Cat(h(3,0), a(8,7)) // word-line address
       val i4_2   = Cat(a(4)^a(11)^a(14)^a(6)^h(4)^h(6)^h(9)^h(14)^h(15)^h(16)^z(6),
@@ -172,9 +172,9 @@ class GSkewBrPredictor(fetch_width: Int,
    private def MetaIdxHash (addr: UInt, h: UInt, w: Int) =
    {
       //val hlen = Seq(history_length, 15).max
-      //(addr >> UInt(shamt)) ^ Fold(hist(hlen-1,0), meta_idx_sz)
-      val a = addr >> UInt(shamt)
-      val z      = UInt(0,32) // unused - a from two cycles ago.
+      //(addr >> shamt.U) ^ Fold(hist(hlen-1,0), meta_idx_sz)
+      val a = addr >> shamt.U
+      val z      = 0.U(32.W) // unused - a from two cycles ago.
       val i15_11 = Cat(h(7)^h(11), h(8)^h(12), h(5)^h(13), h(4)^h(9), a(9)^h(6))
       val i10_5  = Cat(h(3,0), a(8,7)) // word-line address
       val i4_2   = Cat(a(4)^a(10)^a(5)^h(7)^h(10)^h(14)^h(13)^z(5),
@@ -237,11 +237,11 @@ class GSkewBrPredictor(fetch_width: Int,
       val vote = PopCount(bim :: g0 :: g1 :: Nil)
       if (enable_meta)
       {
-         takens(i) := Mux(meta, vote > UInt(1), bim)
+         takens(i) := Mux(meta, vote > 1.U, bim)
       }
       else
       {
-         takens(i) := vote > UInt(1)
+         takens(i) := vote > 1.U
       }
    }
 
@@ -296,7 +296,7 @@ class GSkewBrPredictor(fetch_width: Int,
    val com_vote = Vec(for (i <- 0 until fetch_width) yield
    {
       val cnt = PopCount(com_info.bimo(i) :: com_info.gsh0(i) :: com_info.gsh1(i) :: Nil)
-       cnt > UInt(1)
+       cnt > 1.U
    }).asUInt
    val both_agree  = ~(com_vote ^ com_info.bimo)
    val bim_mispredicted  = commit.bits.ctrl.taken.asUInt ^ com_info.bimo

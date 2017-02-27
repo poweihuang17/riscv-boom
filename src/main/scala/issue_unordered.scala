@@ -93,9 +93,9 @@ class IssueUnitStatic(num_issue_slots: Int, issue_width: Int, num_wakeup_ports: 
       io.iss_valids(w) := false.B
       io.iss_uops(w)   := NullMicroOp
       // unsure if this is overkill
-      io.iss_uops(w).pop1 := UInt(0)
-      io.iss_uops(w).pop2 := UInt(0)
-      io.iss_uops(w).pop3 := UInt(0)
+      io.iss_uops(w).pop1 := 0.U
+      io.iss_uops(w).pop2 := 0.U
+      io.iss_uops(w).pop3 := 0.U
       io.iss_uops(w).lrs1_rtype := RT_X
       io.iss_uops(w).lrs2_rtype := RT_X
    }
@@ -119,7 +119,7 @@ class IssueUnitStatic(num_issue_slots: Int, issue_width: Int, num_wakeup_ports: 
       // first look for high priority requests
       for (i <- 0 until num_requestors)
       {
-         val can_allocate = (issue_slots(i).uop.fu_code & io.fu_types(w)) =/= Bits(0)
+         val can_allocate = (issue_slots(i).uop.fu_code & io.fu_types(w)) =/= 0.U
 
          when (hi_request_not_satisfied(i) && can_allocate && !port_issued)
          {
@@ -139,7 +139,7 @@ class IssueUnitStatic(num_issue_slots: Int, issue_width: Int, num_wakeup_ports: 
       // now look for low priority requests
       for (i <- 0 until num_requestors)
       {
-         val can_allocate = (issue_slots(i).uop.fu_code & io.fu_types(w)) =/= Bits(0)
+         val can_allocate = (issue_slots(i).uop.fu_code & io.fu_types(w)) =/= 0.U
 
          when (lo_request_not_satisfied(i) && can_allocate && !port_issued)
          {

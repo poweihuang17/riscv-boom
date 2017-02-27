@@ -74,7 +74,7 @@ class CircularShiftRegisterIO(compressed_length: Int, history_length: Int) exten
       this.taken := false.B
       this.evict := false.B
       this.do_rollback := false.B
-      this.rollback_value := UInt(0)
+      this.rollback_value := 0.U
       this.rs_new_bit := false.B
       this.rs_evict_bit := false.B
    }
@@ -89,7 +89,7 @@ class CircularShiftRegister(
 
    // TODO XXX remove init once fully debugged
    // TODO XXX handle case when clen > hlen
-   val csr = Reg(init = UInt(0, width=compressed_length))
+   val csr = Reg(init = 0.U(compressed_length.W))
    val next = Wire(init = csr)
 
    when (io.do_rollback && io.do_rbk_shift)

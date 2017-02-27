@@ -155,26 +155,26 @@ class TageBrPredictor(
    def GetProviderTableId(hits:IndexedSeq[Bool]): UInt =
    {
       // return the id of the highest table with a hit
-      PriorityMux(hits.reverse, (num_tables-1 to 0 by -1).map(UInt(_)))
+      PriorityMux(hits.reverse, (num_tables-1 to 0 by -1).map(_.U))
    }
 
    def GetAlternateTableId(hits:IndexedSeq[Bool]): (Bool, UInt) =
    {
       // return the id of the 2nd highest table with a hit
       // also returns whether a 2nd hit was found (PopCount(hits) > 1)
-      val alt_id = Wire(init=UInt(0))
+      val alt_id = Wire(init=0.U)
       var found_first = false.B
       var found_second = false.B
       for (i <- num_tables-1 to 0 by -1)
       {
          when (found_first && !found_second)
          {
-            alt_id := UInt(i)
+            alt_id := i.U
          }
          found_second = (hits(i) && found_first) | found_second
          found_first = hits(i) | found_first
       }
-      assert ((PopCount(hits) > UInt(1)) ^ !found_second,
+      assert ((PopCount(hits) > 1.U) ^ !found_second,
          "[Tage] GetAltId has a disagreement on finding a second hit.")
       (found_second, alt_id)
    }
@@ -300,7 +300,7 @@ class TageBrPredictor(
 
    when (commit.valid && commit.bits.ctrl.executed.reduce(_|_))
    {
-      assert (info.provider_id < UInt(num_tables) || !info.provider_hit, "[Tage] provider_id is out-of-bounds.")
+      assert (info.provider_id < num_tables.U || !info.provider_hit, "[Tage] provider_id is out-of-bounds.")
    }
 
    // TODO verify this behavior/logic is correct (re: asUInt()/Vec conversion)
@@ -315,10 +315,10 @@ class TageBrPredictor(
    // Track ubit degrade flush timer.
 
    val degrade_counter = _root_.util.WideCounter(20, commit.valid && commit.bits.ctrl.executed.reduce(_|_))
-   val do_degrade = degrade_counter === UInt(1<<19)
+   val do_degrade = degrade_counter === (1<<19).U
    when (do_degrade)
    {
-      degrade_counter := UInt(0)
+      degrade_counter := 0.U
       for (i <- 0 until num_tables)
       {
          tables_io(i).DegradeUsefulness()
@@ -337,8 +337,8 @@ class TageBrPredictor(
 
 
    // provide some randomization to the allocation process
-   val rand = Reg(init=UInt(0,2))
-   rand := rand + UInt(1)
+   val rand = Reg(init=0.U(2.W))
+   rand := rand + 1.U
 
    val ubit_update_wens = Wire(init = Vec.fill(num_tables) {false.B})
    val ubit_update_incs = Wire(init = Vec.fill(num_tables) {false.B})
@@ -357,7 +357,7 @@ class TageBrPredictor(
       }
 
 
-      when (!s2_correct && (s2_provider_id < UInt(MAX_TABLE_ID) || !s2_info.provider_hit))
+      when (!s2_correct && (s2_provider_id < MAX_TABLE_ID.U || !s2_info.provider_hit))
       {
          // try to allocate a new entry
 
@@ -370,18 +370,18 @@ class TageBrPredictor(
          //       can be strengthened.
 
 
-         val temp = Mux(rand === UInt(3), UInt(2),
-                      Mux(rand === UInt(2), UInt(1),
-                                            UInt(0)))
-         val ridx = Mux((Cat(UInt(0), s2_provider_id) + temp) >= UInt(MAX_TABLE_ID),
-                     UInt(0),
+         val temp = Mux(rand === 3.U, 2.U,
+                      Mux(rand === 2.U, 1.U,
+                                            0.U))
+         val ridx = Mux((Cat(0.U, s2_provider_id) + temp) >= MAX_TABLE_ID.U,
+                     0.U,
                      temp)
 
 
          // find lowest alloc_idx where u_bits === 0
          val can_allocates = Range(0, num_tables).map{ i =>
             s2_ubits_notuseful(i) &&
-            ((UInt(i) > (Cat(UInt(0), s2_provider_id) + ridx)) || !s2_info.provider_hit)
+            ((i.U > (Cat(0.U, s2_provider_id) + ridx)) || !s2_info.provider_hit)
          }
 
          val alloc_id = PriorityEncoder(can_allocates)
@@ -400,7 +400,7 @@ class TageBrPredictor(
             //decrementUBits for tables[provider_id+1: T_max]
             for (i <- 0 until num_tables)
             {
-               when ((UInt(i) > s2_provider_id) || !s2_info.provider_hit)
+               when ((i.U > s2_provider_id) || !s2_info.provider_hit)
                {
                   ubit_update_wens(i) := true.B
                   ubit_update_incs(i) := false.B

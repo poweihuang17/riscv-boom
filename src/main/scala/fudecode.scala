@@ -305,11 +305,11 @@ class RegisterReadDecode(supported_units: SupportedFuncUnits)(implicit p: Parame
 
    when (io.rrd_uop.uopc === uopAMO_AG)
    {
-      io.rrd_uop.imm_packed := UInt(0)
+      io.rrd_uop.imm_packed := 0.U
    }
 
    val raddr1 = io.rrd_uop.pop1 // although renamed, it'll stay 0 if lrs1 = 0
-   val csr_ren = (rrd_cs.csr_cmd === rocket.CSR.S || rrd_cs.csr_cmd === rocket.CSR.C) && raddr1 === UInt(0)
+   val csr_ren = (rrd_cs.csr_cmd === rocket.CSR.S || rrd_cs.csr_cmd === rocket.CSR.C) && raddr1 === 0.U
    io.rrd_uop.ctrl.csr_cmd := Mux(csr_ren, rocket.CSR.R, rrd_cs.csr_cmd)
 
 

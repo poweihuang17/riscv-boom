@@ -107,19 +107,19 @@ class TageTableIo(
       this.allocate.valid := false.B
       this.update_counters.valid := false.B
       this.update_usefulness.valid := false.B
-      this.allocate.bits.index := UInt(0)
-      this.allocate.bits.tag := UInt(0)
-      this.allocate.bits.executed := UInt(0)
-      this.allocate.bits.taken := UInt(0)
-      this.allocate.bits.debug_pc := UInt(0)
-      this.allocate.bits.debug_hist_ptr := UInt(0)
-      this.update_counters.bits.index := UInt(0)
-      this.update_counters.bits.executed := UInt(0)
-      this.update_counters.bits.taken := UInt(0)
+      this.allocate.bits.index := 0.U
+      this.allocate.bits.tag := 0.U
+      this.allocate.bits.executed := 0.U
+      this.allocate.bits.taken := 0.U
+      this.allocate.bits.debug_pc := 0.U
+      this.allocate.bits.debug_hist_ptr := 0.U
+      this.update_counters.bits.index := 0.U
+      this.update_counters.bits.executed := 0.U
+      this.update_counters.bits.taken := 0.U
       this.update_counters.bits.mispredicted := false.B
-      this.update_usefulness.bits.index := UInt(0)
+      this.update_usefulness.bits.index := 0.U
       this.update_usefulness.bits.inc := false.B
-      this.usefulness_req_idx := UInt(0)
+      this.usefulness_req_idx := 0.U
       this.degrade_usefulness_valid := false.B
    }
 
@@ -141,7 +141,7 @@ class TageTableResp(fetch_width: Int, history_length: Int, index_length: Int, ta
    // 0x0).
    val idx_csr  = UInt(index_length.W)
    val tag_csr1 = UInt(tag_sz.W)
-   val tag_csr2 = UInt(width = tag_sz-1)
+   val tag_csr2 = UInt((tag_sz-1).W)
 
    override def cloneType: this.type = new TageTableResp(fetch_width, history_length, index_length, tag_sz).asInstanceOf[this.type]
 }
@@ -232,7 +232,7 @@ class TageTable(
    val ubit_table    = if (ubit_sz == 1) Module(new TageUbitMemoryFlipFlop(num_entries, ubit_sz))
                        else              Module(new TageUbitMemorySeqMem(num_entries, ubit_sz))
    val debug_pc_table= Mem(num_entries, UInt(32.W))
-   val debug_hist_ptr_table=Mem(num_entries,UInt(width = log2Up(VLHR_LENGTH)))
+   val debug_hist_ptr_table=Mem(num_entries,UInt(log2Up(VLHR_LENGTH).W))
 
    //history ghistory
    val idx_csr         = Module(new CircularShiftRegister(index_sz, history_length))
@@ -265,14 +265,14 @@ class TageTable(
       }
       else
       {
-         var res = UInt(0,clen)
+         var res = 0.U(clen.W)
          var remaining = input.toUInt
          for (i <- 0 to hlen-1 by clen)
          {
             val len = if (i + clen > hlen ) (hlen - i) else clen
             require(len > 0)
             res = res(clen-1,0) ^ remaining(len-1,0)
-            remaining = remaining >> UInt(len)
+            remaining = remaining >> len.U
          }
          res
       }
@@ -281,7 +281,7 @@ class TageTable(
    private def IdxHash (addr: UInt) =
    {
       val idx =
-         ((addr >> UInt(log2Up(fetch_width*coreInstBytes))) ^
+         ((addr >> log2Up(fetch_width*coreInstBytes).U) ^
          idx_csr.io.next)
 
       idx(index_sz-1,0)
@@ -291,9 +291,9 @@ class TageTable(
    {
       // the tag is computed by pc[n:0] ^ CSR1[n:0] ^ (CSR2[n-1:0]<<1).
       val tag_hash =
-         (addr >> UInt(log2Up(fetch_width*coreInstBytes))) ^
+         (addr >> log2Up(fetch_width*coreInstBytes).U) ^
          tag_csr1.io.next ^
-         (tag_csr2.io.next << UInt(1))
+         (tag_csr2.io.next << 1.U)
       tag_hash(tag_sz-1,0)
    }
 
@@ -399,7 +399,7 @@ class TageTable(
       debug_pc_table(a_idx) := io.allocate.bits.debug_pc
       debug_hist_ptr_table(a_idx) := io.allocate.bits.debug_hist_ptr(history_length-1,0)
 
-      assert (a_idx < UInt(num_entries), "[TageTable] out of bounds index on allocation")
+      assert (a_idx < num_entries.U, "[TageTable] out of bounds index on allocation")
    }
    .elsewhen (io.update_counters.valid)
    {

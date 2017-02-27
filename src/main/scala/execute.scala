@@ -153,13 +153,13 @@ class ALUExeUnit(
    val fu_units = ArrayBuffer[FunctionalUnit]()
 
    io.fu_types := FU_ALU |
-                  Mux(has_fpu.B, FU_FPU, Bits(0)) |
-                  Mux((has_mul && !use_slow_mul).B, FU_MUL, Bits(0)) |
-                  (Mux(!muldiv_busy && (has_mul && use_slow_mul).B, FU_MUL, Bits(0))) |
-                  (Mux(!muldiv_busy && has_div.B, FU_DIV, Bits(0))) |
-                  (Mux(shares_csr_wport.B, FU_CSR, Bits(0))) |
-                  (Mux(is_branch_unit.B, FU_BRU, Bits(0))) |
-                  Mux(!fdiv_busy && has_fdiv.B, FU_FDV, Bits(0))
+                  Mux(has_fpu.B, FU_FPU, 0.U) |
+                  Mux((has_mul && !use_slow_mul).B, FU_MUL, 0.U) |
+                  (Mux(!muldiv_busy && (has_mul && use_slow_mul).B, FU_MUL, 0.U)) |
+                  (Mux(!muldiv_busy && has_div.B, FU_DIV, 0.U)) |
+                  (Mux(shares_csr_wport.B, FU_CSR, 0.U)) |
+                  (Mux(is_branch_unit.B, FU_BRU, 0.U)) |
+                  Mux(!fdiv_busy && has_fdiv.B, FU_FDV, 0.U)
 
 
    // ALU Unit -------------------------------
@@ -298,9 +298,9 @@ class ALUExeUnit(
 
    io.resp(0).bits.fflags := Mux(fpu_resp_val, fpu_resp_fflags, fdiv_resp_fflags)
 
-   assert ((PopCount(fu_units.map(_.io.resp.valid)) <= UInt(1) && !muldiv_resp_val && !fdiv_resp_val) ||
-          (PopCount(fu_units.map(_.io.resp.valid)) <= UInt(2) && (muldiv_resp_val || fdiv_resp_val)) ||
-          (PopCount(fu_units.map(_.io.resp.valid)) <= UInt(3) && muldiv_resp_val && fdiv_resp_val)
+   assert ((PopCount(fu_units.map(_.io.resp.valid)) <= 1.U && !muldiv_resp_val && !fdiv_resp_val) ||
+          (PopCount(fu_units.map(_.io.resp.valid)) <= 2.U && (muldiv_resp_val || fdiv_resp_val)) ||
+          (PopCount(fu_units.map(_.io.resp.valid)) <= 3.U && muldiv_resp_val && fdiv_resp_val)
       , "Multiple functional units are fighting over the write port.")
 }
 
@@ -316,7 +316,7 @@ class FDivSqrtExeUnit(implicit p: Parameters)
    println ("     ExeUnit--")
    println ("       - FDiv/FSqrt")
    val fdiv_busy = Wire(Bool())
-   io.fu_types := Mux(!fdiv_busy, FU_FDV, Bits(0))
+   io.fu_types := Mux(!fdiv_busy, FU_FDV, 0.U)
 
    val fdivsqrt = Module(new FDivSqrtUnit())
    fdivsqrt.io.req <> io.req
@@ -423,13 +423,13 @@ class MemExeUnit(implicit p: Parameters) extends ExecutionUnit(num_rf_read_ports
       val load_single = typ === rocket.MT_W || typ === rocket.MT_WU
       val rec_s = hardfloat.recFNFromFN(8, 24, io.dmem.resp.bits.data)
       val rec_d = hardfloat.recFNFromFN(11, 53, io.dmem.resp.bits.data)
-      val fp_load_data_recoded = Mux(load_single, Cat(SInt(-1, 32), rec_s), rec_d)
+      val fp_load_data_recoded = Mux(load_single, Cat((-1).S(32.W), rec_s), rec_d)
 
       val typ_f = lsu.io.forward_uop.mem_typ
       val load_single_f = typ_f === rocket.MT_W || typ_f === rocket.MT_WU
       val rec_s_f = hardfloat.recFNFromFN(8, 24, lsu.io.forward_data)
       val rec_d_f = hardfloat.recFNFromFN(11, 53, lsu.io.forward_data)
-      val fp_load_data_recoded_forwarded = Mux(load_single_f, Cat(SInt(-1,32), rec_s_f), rec_d_f)
+      val fp_load_data_recoded_forwarded = Mux(load_single_f, Cat((-1).S(32.W), rec_s_f), rec_d_f)
 
       memresp_data = Mux(lsu.io.forward_val && !lsu.io.forward_uop.fp_val, lsu.io.forward_data,
                      Mux(lsu.io.forward_val && lsu.io.forward_uop.fp_val , fp_load_data_recoded_forwarded,
@@ -491,13 +491,13 @@ class ALUMemExeUnit(
    val fdiv_busy = Wire(Bool())
    io.fu_types := FU_ALU |
                   FU_MEM |
-                  Mux(has_fpu.B, FU_FPU, Bits(0)) |
-                  (Mux((has_mul && !use_slow_mul).B, FU_MUL, Bits(0))) |
-                  (Mux(!muldiv_busy && use_slow_mul.B, FU_MUL, Bits(0))) |
-                  (Mux(!muldiv_busy && has_div.B, FU_DIV, Bits(0))) |
-                  (Mux(shares_csr_wport.B, FU_CSR, Bits(0))) |
-                  Mux(is_branch_unit.B, FU_BRU, Bits(0)) |
-                  Mux(!fdiv_busy && has_fdiv.B, FU_FDV, Bits(0))
+                  Mux(has_fpu.B, FU_FPU, 0.U) |
+                  (Mux((has_mul && !use_slow_mul).B, FU_MUL, 0.U)) |
+                  (Mux(!muldiv_busy && use_slow_mul.B, FU_MUL, 0.U)) |
+                  (Mux(!muldiv_busy && has_div.B, FU_DIV, 0.U)) |
+                  (Mux(shares_csr_wport.B, FU_CSR, 0.U)) |
+                  Mux(is_branch_unit.B, FU_BRU, 0.U) |
+                  Mux(!fdiv_busy && has_fdiv.B, FU_FDV, 0.U)
 
 
    val memresp_val = Wire(Bool())
@@ -581,7 +581,7 @@ class ALUMemExeUnit(
       io.resp(0).bits.fflags.bits.flags := fpu.io.resp.bits.fflags.bits.flags
    }
 
-   assert (PopCount(fu_units.map(_.io.resp.valid)) <= UInt(1)
+   assert (PopCount(fu_units.map(_.io.resp.valid)) <= 1.U
       , "Multiple functional units are fighting over the write port.")
 
    // Mul/Div/Rem Unit -----------------------
@@ -722,13 +722,13 @@ class ALUMemExeUnit(
       val load_single = typ === rocket.MT_W || typ === rocket.MT_WU
       val rec_s = hardfloat.recFNFromFN(8, 24, io.dmem.resp.bits.data)
       val rec_d = hardfloat.recFNFromFN(11, 53, io.dmem.resp.bits.data)
-      val fp_load_data_recoded = Mux(load_single, Cat(SInt(-1, 32), rec_s), rec_d)
+      val fp_load_data_recoded = Mux(load_single, Cat((-1).S(32.W), rec_s), rec_d)
 
       val typ_f = lsu.io.forward_uop.mem_typ
       val load_single_f = typ_f === rocket.MT_W || typ_f === rocket.MT_WU
       val rec_s_f = hardfloat.recFNFromFN(8, 24, lsu.io.forward_data)
       val rec_d_f = hardfloat.recFNFromFN(11, 53, lsu.io.forward_data)
-      val fp_load_data_recoded_forwarded = Mux(load_single_f, Cat(SInt(-1,32), rec_s_f), rec_d_f)
+      val fp_load_data_recoded_forwarded = Mux(load_single_f, Cat((-1).S(32.W), rec_s_f), rec_d_f)
 
       memresp_data = Mux(lsu.io.forward_val && !lsu.io.forward_uop.fp_val, lsu.io.forward_data,
                      Mux(lsu.io.forward_val && lsu.io.forward_uop.fp_val,  fp_load_data_recoded_forwarded,

@@ -204,9 +204,9 @@ class Rob(width: Int
 
 
    //commit entries at the head, and unwind exceptions from the tail
-   val rob_head = Reg(init = UInt(0, log2Up(num_rob_rows)))
-   val rob_tail = Reg(init = UInt(0, log2Up(num_rob_rows)))
-   val rob_tail_idx = rob_tail << UInt(log2Ceil(width))
+   val rob_head = Reg(init = 0.U(log2Up(num_rob_rows).W))
+   val rob_tail = Reg(init = 0.U(log2Up(num_rob_rows).W))
+   val rob_tail_idx = rob_tail << log2Ceil(width).U
 
    val will_commit         = Wire(Vec(width, Bool()))
    val can_commit          = Wire(Vec(width, Bool()))
@@ -236,11 +236,11 @@ class Rob(width: Int
    def GetRowIdx(rob_idx: UInt): UInt =
    {
       if (width == 1) return rob_idx // TODO remove this, should be unnecessary with Ceil
-      else return rob_idx >> UInt(log2Ceil(width))
+      else return rob_idx >> log2Ceil(width).U
    }
    def GetBankIdx(rob_idx: UInt): UInt =
    {
-      if(width == 1) { return UInt(0) }
+      if(width == 1) { return 0.U }
       else           { return rob_idx(log2Up(width)-1, 0).toUInt }
    }
 
@@ -282,20 +282,20 @@ class Rob(width: Int
    // the br unit needs to read out two consecutive ROBs
    val (curr_row_pc, next_row_pc) = rob_pc_hob.read2(GetRowIdx(io.get_pc.rob_idx))
 
-   io.get_pc.curr_pc := curr_row_pc + Cat(GetBankIdx(io.get_pc.rob_idx), Bits(0,2))
+   io.get_pc.curr_pc := curr_row_pc + Cat(GetBankIdx(io.get_pc.rob_idx), 0.U(2.W))
 
-   val next_bank_idx = if (width == 1) UInt(0) else PriorityEncoder(rob_brt_vals.asUInt())
+   val next_bank_idx = if (width == 1) 0.U else PriorityEncoder(rob_brt_vals.asUInt())
 
    // TODO is this logic broken if the ROB can fill up completely?
    val rob_pc_hob_next_val = rob_brt_vals.reduce(_|_)
 
-   val bypass_next_bank_idx = if (width == 1) UInt(0) else PriorityEncoder(io.dis_valids.asUInt())
-   val bypass_next_pc = (io.dis_uops(0).pc.toSInt & SInt(-(DECODE_WIDTH*coreInstBytes))).toUInt +
-                        Cat(bypass_next_bank_idx, Bits(0,2))
+   val bypass_next_bank_idx = if (width == 1) 0.U else PriorityEncoder(io.dis_valids.asUInt())
+   val bypass_next_pc = (io.dis_uops(0).pc.toSInt & (-(DECODE_WIDTH*coreInstBytes)).S).toUInt +
+                        Cat(bypass_next_bank_idx, 0.U(2.W))
 
    io.get_pc.next_val := rob_pc_hob_next_val || io.dis_valids.reduce(_|_)
    io.get_pc.next_pc := Mux(rob_pc_hob_next_val,
-                           next_row_pc + Cat(next_bank_idx, Bits(0,2)),
+                           next_row_pc + Cat(next_bank_idx, 0.U(2.W)),
                            bypass_next_pc)
 
    // **************************************************************************
@@ -345,7 +345,7 @@ class Rob(width: Int
 
    for (w <- 0 until width)
    {
-      def MatchBank(bank_idx: UInt): Bool = (bank_idx === UInt(w))
+      def MatchBank(bank_idx: UInt): Bool = (bank_idx === w.U)
 
       // one bank
       val rob_val       = Reg(init = Vec.fill(num_rob_rows){false.B})
@@ -366,7 +366,7 @@ class Rob(width: Int
                                     !(io.dis_uops(w).is_fencei)
          rob_uop(rob_tail)       := io.dis_uops(w)
          rob_exception(rob_tail) := io.dis_uops(w).exception
-         rob_fflags(rob_tail)    := Bits(0)
+         rob_fflags(rob_tail)    := 0.U
          rob_uop(rob_tail).stat_brjmp_mispredicted := false.B
       }
       .elsewhen (io.dis_valids.reduce(_|_) && !rob_val(rob_tail))
@@ -397,7 +397,7 @@ class Rob(width: Int
          // TODO check that the wb is to a valid ROB entry, give it a time stamp
 //         assert (!(wb_resp.valid && MatchBank(GetBankIdx(wb_uop.rob_idx)) &&
 //                  wb_uop.fp_val && !(wb_uop.is_load || wb_uop.is_store) &&
-//                  rob_exc_cause(row_idx) =/= Bits(0)),
+//                  rob_exc_cause(row_idx) =/= 0.U),
 //                  "FP instruction writing back exc bits is overriding an existing exception.")
       }
 
@@ -503,7 +503,7 @@ class Rob(width: Int
          when (io.brinfo.valid && io.brinfo.mispredict && entry_match)
          {
             rob_val(i) := false.B
-            rob_uop(UInt(i)).inst := BUBBLE
+            rob_uop(i.U).inst := BUBBLE
          }
          .elsewhen (io.brinfo.valid && !io.brinfo.mispredict && entry_match)
          {
@@ -568,10 +568,10 @@ class Rob(width: Int
          for (i <- 0 until num_rob_rows)
          {
             debug_entry(w + i*width).valid := rob_val(i)
-            debug_entry(w + i*width).busy := rob_bsy(UInt(i))
-            debug_entry(w + i*width).uop := rob_uop(UInt(i))
-            debug_entry(w + i*width).uop.pc := rob_pc_hob.read(UInt(i,log2Up(num_rob_rows))) + UInt(w << 2)
-            debug_entry(w + i*width).exception := rob_exception(UInt(i))
+            debug_entry(w + i*width).busy := rob_bsy(i.U)
+            debug_entry(w + i*width).uop := rob_uop(i.U)
+            debug_entry(w + i*width).uop.pc := rob_pc_hob.read(i.U(log2Up(num_rob_rows).W)) + (w << 2).U
+            debug_entry(w + i*width).exception := rob_exception(i.U)
          }
       }
 
@@ -619,8 +619,8 @@ class Rob(width: Int
 
    val refetch_inst = exception_thrown
    val flush_pc  = rob_pc_hob.read(rob_head) +
-                   PriorityMux(rob_head_vals, Range(0,width).map(w => UInt(w << 2))) +
-                   Mux(refetch_inst, UInt(0), UInt(4))
+                   PriorityMux(rob_head_vals, Range(0,width).map(w => (w << 2).U)) +
+                   Mux(refetch_inst, 0.U, 4.U)
    io.com_xcpt.bits.pc := flush_pc
 
    val flush_val = exception_thrown ||
@@ -650,16 +650,16 @@ class Rob(width: Int
                        io.commit.uops(w).fp_val &&
                       !(io.commit.uops(w).is_load || io.commit.uops(w).is_store)
 
-      fflags(w) := Mux(fflags_val(w), rob_head_fflags(w), Bits(0))
+      fflags(w) := Mux(fflags_val(w), rob_head_fflags(w), 0.U)
 
       assert (!(io.commit.valids(w) &&
                !io.commit.uops(w).fp_val &&
-               rob_head_fflags(w) =/= Bits(0)),
+               rob_head_fflags(w) =/= 0.U),
                "Committed non-FP instruction has non-zero fflag bits.")
       assert (!(io.commit.valids(w) &&
                io.commit.uops(w).fp_val &&
                (io.commit.uops(w).is_load || io.commit.uops(w).is_store) &&
-               rob_head_fflags(w) =/= Bits(0)),
+               rob_head_fflags(w) =/= 0.U),
                "Committed FP load or store has non-zero fflag bits.")
    }
    io.commit.fflags.valid := fflags_val.reduce(_|_)
@@ -704,7 +704,7 @@ class Rob(width: Int
          // if no exception yet, dispatch exception wins
          r_xcpt_val      := true.B
          next_xcpt_uop   := io.dis_uops(idx)
-         r_xcpt_badvaddr := io.dis_uops(0).pc + (idx << UInt(2))
+         r_xcpt_badvaddr := io.dis_uops(0).pc + (idx << 2.U)
       }
    }
 
@@ -737,8 +737,8 @@ class Rob(width: Int
    // dispatch the rest of it.
    // update when committed ALL valid instructions in commit_bundle
 
-   finished_committing_row := (io.commit.valids.asUInt() =/= Bits(0)) &&
-                              ((will_commit.asUInt() ^ rob_head_vals.asUInt()) === Bits(0)) &&
+   finished_committing_row := (io.commit.valids.asUInt() =/= 0.U) &&
+                              ((will_commit.asUInt() ^ rob_head_vals.asUInt()) === 0.U) &&
                               !(r_partial_row && rob_head === rob_tail)
    when (finished_committing_row)
    {
@@ -756,7 +756,7 @@ class Rob(width: Int
    {
       rob_tail := WrapInc(GetRowIdx(io.brinfo.rob_idx), num_rob_rows)
    }
-   .elsewhen (io.dis_valids.asUInt() =/= Bits(0) && !io.dis_partial_stall)
+   .elsewhen (io.dis_valids.asUInt() =/= 0.U && !io.dis_partial_stall)
    {
       rob_tail := WrapInc(rob_tail, num_rob_rows)
    }
@@ -766,8 +766,8 @@ class Rob(width: Int
    {
       when (Reg(next=exception_thrown))
       {
-         rob_tail := UInt(0)
-         rob_head := UInt(0)
+         rob_tail := 0.U
+         rob_head := 0.U
       }
    }
 
@@ -781,7 +781,7 @@ class Rob(width: Int
    // also must handle rob_pc valid logic.
    val full = WrapInc(rob_tail, num_rob_rows) === rob_head
 
-   io.empty := (rob_head === rob_tail) && (rob_head_vals.asUInt() === Bits(0))
+   io.empty := (rob_head === rob_tail) && (rob_head_vals.asUInt() === 0.U)
 
    io.curr_rob_tail := rob_tail
 
@@ -922,11 +922,11 @@ class Rob(width: Int
       def  read (row_idx: UInt) =
       {
          val rdata = Wire(Bits(xLen.W))
-         rdata := bank0(row_idx >> UInt(1)) << UInt(pc_shift)
+         rdata := bank0(row_idx >> 1.U) << pc_shift.U
          // damn chisel demands a "default"
          when (row_idx(0))
          {
-            rdata := bank1(row_idx >> UInt(1)) << UInt(pc_shift)
+            rdata := bank1(row_idx >> 1.U) << pc_shift.U
          }
          Sext(rdata(vaddrBits,0), xLen)
       }
@@ -935,10 +935,10 @@ class Rob(width: Int
       def read2 (row_idx: UInt) =
       {
          // addr0, left shifted by 1 (makes wrap around logic easier)
-         val addr0_ls1 = Mux(row_idx(0), WrapInc(row_idx >> UInt(1), num_rob_rows/2),
-                                         row_idx >> UInt(1))
-         val data0 = bank0(addr0_ls1) << UInt(pc_shift)
-         val data1 = bank1(row_idx >> UInt(1)) << UInt(pc_shift)
+         val addr0_ls1 = Mux(row_idx(0), WrapInc(row_idx >> 1.U, num_rob_rows/2),
+                                         row_idx >> 1.U)
+         val data0 = bank0(addr0_ls1) << pc_shift.U
+         val data1 = bank1(row_idx >> 1.U) << pc_shift.U
 
          val curr_pc = Wire(UInt(xLen.W))
          val next_pc = Wire(UInt(xLen.W))
@@ -953,14 +953,14 @@ class Rob(width: Int
       // takes rob_row_idx, write in PC (with low-order bits zeroed out)
       def write (waddr_row: UInt, data: UInt) =
       {
-         val data_in = data(vaddrBits,0) >> UInt(pc_shift)
+         val data_in = data(vaddrBits,0) >> pc_shift.U
          when (waddr_row(0))
          {
-            bank1(waddr_row >> UInt(1)) := data_in
+            bank1(waddr_row >> 1.U) := data_in
          }
          .otherwise
          {
-            bank0(waddr_row >> UInt(1)) := data_in
+            bank0(waddr_row >> 1.U) := data_in
          }
       }
    }
@@ -990,15 +990,15 @@ class Rob(width: Int
          val r_tail = rob_tail
 
          printf("    rob[%d] %c ("
-            , UInt(row, ROB_ADDR_SZ)
+            , row.U(ROB_ADDR_SZ.W)
             // chisel3 lacks %s support
-            , Mux(r_head === UInt(row) && r_tail === UInt(row), Str("B"),
-              Mux(r_head === UInt(row), Str("H"),
-              Mux(r_tail === UInt(row), Str("T"),
+            , Mux(r_head === row.U && r_tail === row.U, Str("B"),
+              Mux(r_head === row.U, Str("H"),
+              Mux(r_tail === row.U, Str("T"),
                                         Str(" "))))
-//            , Mux(r_head === UInt(row) && r_tail === UInt(row), Str("HEAD,TL->"),
-//              Mux(r_head === UInt(row), Str("HEAD --->"),
-//              Mux(r_tail === UInt(row), Str("     TL->"),
+//            , Mux(r_head === row.U && r_tail === row.U, Str("HEAD,TL->"),
+//              Mux(r_head === row.U, Str("HEAD --->"),
+//              Mux(r_tail === row.U, Str("     TL->"),
 //                                        Str(" "))))
             )
 

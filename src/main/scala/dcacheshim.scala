@@ -206,13 +206,13 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
    for (i <- 0 until max_num_inflight)
    {
       // don't clr random entry, make sure m1_tag is correct
-      inflight_load_buffer(i).clear       := (cache_load_ack && io.dmem.resp.bits.tag === UInt(i)) ||
+      inflight_load_buffer(i).clear       := (cache_load_ack && io.dmem.resp.bits.tag === i.U) ||
                                              (io.dmem.s2_nack &&
                                                 (m2_req_uop.is_load || m2_req_uop.is_amo) &&
-                                                m2_inflight_tag === UInt(i) &&
+                                                m2_inflight_tag === i.U &&
                                                 Reg(next=Reg(next=(enq_val && enq_rdy)))) ||
                                              (io.core.req.bits.kill &&
-                                                m1_inflight_tag === UInt(i) &&
+                                                m1_inflight_tag === i.U &&
                                                 Reg(next=(enq_val && enq_rdy)))
       inflight_load_buffer(i).brinfo      := io.core.brinfo
       inflight_load_buffer(i).flush_pipe  := io.core.flush_pipe
@@ -222,13 +222,13 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
 
    // dispatch/entry logic
    val enq_idx = Wire(UInt(log2Up(max_num_inflight).W))
-   enq_idx := UInt(0)
+   enq_idx := 0.U
 
    for (i <- max_num_inflight-1 to 0 by -1)
    {
       when (!inflight_load_buffer(i).valid)
       {
-         enq_idx := UInt(i)
+         enq_idx := i.U
       }
    }
 
@@ -248,7 +248,7 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
 
    val enq_can_occur = enq_val && enq_rdy
 
-   val enq_idx_1h = (Bits(1) << enq_idx) &
+   val enq_idx_1h = (1.U << enq_idx) &
                     Fill(max_num_inflight, enq_can_occur)
 
 
@@ -263,11 +263,11 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
 
 
    // try to catch if there's a resource leak
-   val full_counter = Reg(init=UInt(0,32))
-   when (enq_rdy) { full_counter := UInt(0) }
-   .otherwise     { full_counter := full_counter + UInt(1) }
+   val full_counter = Reg(init=0.U(32.W))
+   when (enq_rdy) { full_counter := 0.U }
+   .otherwise     { full_counter := full_counter + 1.U }
 
-   assert(full_counter <= UInt(10000), "Inflight buffers have been busy for 10k cycles. Probably a resource leak.")
+   assert(full_counter <= 10000.U, "Inflight buffers have been busy for 10k cycles. Probably a resource leak.")
 
 
    //------------------------------------------------------------

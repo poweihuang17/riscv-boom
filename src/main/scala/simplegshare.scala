@@ -70,13 +70,13 @@ class SimpleGShareBrPredictor(
 
    private def Hash (addr: UInt, hist: UInt): UInt =
    {
-      (addr >> UInt(log2Up(fetch_width*coreInstBytes))) ^ hist
+      (addr >> log2Up(fetch_width*coreInstBytes).U) ^ hist
    }
 
    private def GetPrediction(cntr: UInt): Bool =
    {
       // return highest-order bit
-      (cntr >> UInt(CNTR_SZ-1))(0).toBool
+      (cntr >> (CNTR_SZ-1).U)(0).toBool
    }
 
    private def UpdateCounters(
@@ -91,13 +91,13 @@ class SimpleGShareBrPredictor(
          updated_row(i) := counter_row(i)
          when (valid)
          {
-            when (enables(i) && takens(i) && counter_row(i) =/= UInt(CNTR_MAX))
+            when (enables(i) && takens(i) && counter_row(i) =/= CNTR_MAX.U)
             {
-               updated_row(i) := counter_row(i) + UInt(1)
+               updated_row(i) := counter_row(i) + 1.U
             }
-            .elsewhen (enables(i) && !takens(i) && counter_row(i) =/= UInt(0))
+            .elsewhen (enables(i) && !takens(i) && counter_row(i) =/= 0.U)
             {
-               updated_row(i) := counter_row(i) - UInt(1)
+               updated_row(i) := counter_row(i) - 1.U
             }
          }
       }

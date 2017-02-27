@@ -66,7 +66,7 @@ abstract class IssueUnit(num_issue_slots: Int, issue_width: Int, num_wakeup_port
 
    //-------------------------------------------------------------
 
-   assert (PopCount(issue_slots.map(s => s.grant)) <= UInt(issue_width), "Issue window giving out too many grants.")
+   assert (PopCount(issue_slots.map(s => s.grant)) <= issue_width.U, "Issue window giving out too many grants.")
 
    //-------------------------------------------------------------
 
@@ -90,7 +90,7 @@ abstract class IssueUnit(num_issue_slots: Int, issue_width: Int, num_wakeup_port
       {
          printf("  integer_issue_slot[%d](%c)(Req:%c):wen=%c P:(%c,%c,%c) OP:(%d,%d,%d) PDST:%d %c [[DASM(%x)]" +
                " 0x%x: %d] ri:%d bm=%d imm=0x%x\n"
-            , UInt(i, log2Up(num_issue_slots))
+            , i.U(log2Up(num_issue_slots).W)
             , Mux(issue_slots(i).valid, Str("V"), Str("-"))
 //            , Mux(issue_slots(i).request, Str(u_red + "R" + end), Str(grn + "-" + end))
 //            , Mux(issue_slots(i).in_uop.valid, Str(u_wht + "W" + end),  Str(grn + " " + end))
