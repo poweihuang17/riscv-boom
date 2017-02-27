@@ -130,7 +130,7 @@ class FetchUnit(fetch_width: Int)(implicit p: Parameters) extends BoomModule()(p
       else
       {
          fetch_bundle.debug_events(i).fetch_seq := fseq_reg +
-            PopCount(fetch_bundle.mask.toBits()(i-1,0))
+            PopCount(fetch_bundle.mask.asUInt()(i-1,0))
       }
    }
 

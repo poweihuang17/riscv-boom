@@ -145,7 +145,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    val tsc_reg  = Reg(init = UInt(0, xLen))
    val irt_reg  = Reg(init = UInt(0, xLen))
    tsc_reg  := tsc_reg + Mux(Bool(O3PIPEVIEW_PRINTF), UInt(O3_CYCLE_TIME), UInt(1))
-   irt_reg  := irt_reg + PopCount(rob.io.commit.valids.toBits)
+   irt_reg  := irt_reg + PopCount(rob.io.commit.valids.asUInt())
 
 
    //****************************************
@@ -342,7 +342,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    }
    .otherwise
    {
-      dec_finished_mask := dec_will_fire.toBits | dec_finished_mask
+      dec_finished_mask := dec_will_fire.asUInt() | dec_finished_mask
    }
 
    //-------------------------------------------------------------
@@ -580,7 +580,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    csr.io.rw.wdata :=wb_wdata
 
    // Extra I/O
-   csr.io.retire    := PopCount(rob.io.commit.valids.toBits)
+   csr.io.retire    := PopCount(rob.io.commit.valids.asUInt())
    csr.io.exception := rob.io.com_xcpt.valid && !csr.io.csr_xcpt
    csr.io.pc        := rob.io.com_xcpt.bits.pc
    csr.io.cause     := rob.io.com_xcpt.bits.cause
@@ -838,7 +838,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
 
    // detect pipeline freezes and throw error
    val idle_cycles = _root_.util.WideCounter(32)
-   when (rob.io.commit.valids.toBits.orR || reset.toBool) { idle_cycles := UInt(0) }
+   when (rob.io.commit.valids.asUInt().orR || reset.toBool) { idle_cycles := UInt(0) }
    assert (!(idle_cycles.value(13)), "Pipeline has hung.")
 
 
@@ -1042,7 +1042,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
       printf("Exct(%c%d) Commit(%x) fl: 0x%x (%d) is: 0x%x (%d)\n"
          , Mux(rob.io.com_xcpt.valid, Str("E"), Str("-"))
          , rob.io.com_xcpt.bits.cause
-         , rob.io.commit.valids.toBits
+         , rob.io.commit.valids.asUInt()
          , rename_stage.io.debug.freelist
          , PopCount(rename_stage.io.debug.freelist)
          , rename_stage.io.debug.isprlist

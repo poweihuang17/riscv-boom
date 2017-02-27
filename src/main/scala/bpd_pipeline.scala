@@ -203,12 +203,12 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
    // If the BPD defers (bpd_valid == false), then the BTB's
    // branch prediction stand.
 
-   val bpd_predictions  = is_br.toBits & bpd_bits.takens
+   val bpd_predictions  = is_br.asUInt() & bpd_bits.takens
    val bpd_br_taken     = bpd_predictions.orR && bpd_valid
    val bpd_br_idx       = PriorityEncoder(bpd_predictions)
    val bpd_jal_val      = is_jal.reduce(_|_)
    val bpd_jr_val       = is_jr.reduce(_|_)
-   val bpd_jal_idx      = PriorityEncoder(is_jal.toBits)
+   val bpd_jal_idx      = PriorityEncoder(is_jal.asUInt())
    val bpd_br_beats_jal = bpd_br_taken && (!bpd_jal_val || (bpd_br_idx < bpd_jal_idx))
    val bpd_req_idx      = Mux(bpd_br_beats_jal, bpd_br_idx, bpd_jal_idx)
    val bpd_req_target   = Mux(bpd_br_beats_jal, br_targs(bpd_br_idx), jal_targs(bpd_jal_idx))
@@ -243,11 +243,11 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
    {
       mask(idx)
    }
-   val btb_predicted_br          = IsIdxAMatch(io.btb_resp.bits.bridx, is_br.toBits)
+   val btb_predicted_br          = IsIdxAMatch(io.btb_resp.bits.bridx, is_br.asUInt())
    val btb_predicted_br_taken    = btb_predicted_br && io.btb_resp.bits.taken
    val btb_predicted_br_nottaken = btb_predicted_br && !io.btb_resp.bits.taken
-   val btb_predicted_jump        = IsIdxAMatch(io.btb_resp.bits.bridx, is_jal.toBits | is_jr.toBits)
-   val btb_predicted_jal         = IsIdxAMatch(io.btb_resp.bits.bridx, is_jal.toBits)
+   val btb_predicted_jump        = IsIdxAMatch(io.btb_resp.bits.bridx, is_jal.asUInt() | is_jr.asUInt())
+   val btb_predicted_jal         = IsIdxAMatch(io.btb_resp.bits.bridx, is_jal.asUInt())
 
    val btb_predicted_wrong_jal_target = btb_predicted_jal && io.btb_resp.bits.target =/= jal_targs(bpd_jal_idx)
 
@@ -271,7 +271,7 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
          {
             when (!io.btb_resp.bits.taken)
             {
-               val btb_predicted_jr = IsIdxAMatch(io.btb_resp.bits.bridx, is_jr.toBits)
+               val btb_predicted_jr = IsIdxAMatch(io.btb_resp.bits.bridx, is_jr.asUInt())
                // if JR but predicted not TAKEN, do nothing and let BrUnit fix mispredicton.
                assert (bpd_br_fire ||
                   (bpd_jal_fire && (bpd_jal_idx <= io.btb_resp.bits.bridx)) ||
@@ -377,7 +377,7 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
                                fetchWidth)
    // mask out instructions after first jr (doesn't matter if predicted correctly or not!)
    val jr_kill_mask = KillMask(is_jr.reduce(_|_),
-                               PriorityEncoder(is_jr.toBits),
+                               PriorityEncoder(is_jr.asUInt()),
                                fetchWidth)
    // if we accept the BTB's prediction, mask out instructions after its prediction
    val btb_kill_mask = KillMask(io.btb_resp.valid && io.btb_resp.bits.taken &&
@@ -405,12 +405,12 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
    bp2_br_seen := io.imem_resp.valid &&
                   !io.imem_resp.bits.xcpt_if &&
                   is_br.reduce(_|_) &&
-                  (!bpd_jal_val || (PriorityEncoder(is_br.toBits) < PriorityEncoder(is_jal.toBits))) &&
-                  (!bpd_jr_val || (PriorityEncoder(is_br.toBits) < PriorityEncoder(is_jr.toBits)))
+                  (!bpd_jal_val || (PriorityEncoder(is_br.asUInt()) < PriorityEncoder(is_jal.asUInt()))) &&
+                  (!bpd_jr_val || (PriorityEncoder(is_br.asUInt()) < PriorityEncoder(is_jr.asUInt())))
    bp2_jr_seen := io.imem_resp.valid &&
                   !io.imem_resp.bits.xcpt_if &&
                   is_jr.reduce(_|_) &&
-                  (!bpd_jal_val || (PriorityEncoder(is_jr.toBits) < PriorityEncoder(is_jal.toBits)))
+                  (!bpd_jal_val || (PriorityEncoder(is_jr.asUInt()) < PriorityEncoder(is_jal.asUInt())))
    bp2_br_taken := bpd_br_fire || (io.btb_resp.valid && btb_predicted_br_taken && !bpd_nextline_fire && !override_btb)
 
    //-------------------------------------------------------------
@@ -418,7 +418,7 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
    // TODO flush_take_pc should probably be given to the branch unit, instead of resetting it here?
    // NOTE: what about branch taken earlier?
 
-   val jumps    = is_jal.toBits | is_jr.toBits
+   val jumps    = is_jal.asUInt() | is_jr.asUInt()
    val jmp_idx  = PriorityEncoder(jumps)
    val jmp_inst = (io.imem_resp.bits.data >> (jmp_idx*UInt(coreInstBits)))(coreInstBits-1,0)
    val is_call  = IsCall(jmp_inst)
@@ -441,7 +441,7 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Bo
    {
       printf("bp2_aligned_pc: 0x%x BHT:(%c 0x%x, %d) p:%x (%d) b:%x j:%x (%d) %c %c\n"
          , aligned_pc, Mux(io.req.valid, Str("T"), Str("-")), io.req.bits.target, io.req.bits.idx
-         , bpd_predictions.toBits, bpd_br_idx, is_br.toBits, is_jal.toBits, bpd_jal_idx
+         , bpd_predictions.asUInt(), bpd_br_idx, is_br.asUInt(), is_jal.asUInt(), bpd_jal_idx
          , Mux(bpd_br_beats_jal, Str("B"), Str("J")), Mux(bpd_nextline_fire, Str("N"), Str("-"))
          )
    }

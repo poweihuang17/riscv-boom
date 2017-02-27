@@ -297,7 +297,7 @@ class RegisterReadDecode(supported_units: SupportedFuncUnits)(implicit p: Parame
    io.rrd_uop.ctrl.op1_sel := rrd_cs.op1_sel
    io.rrd_uop.ctrl.op2_sel := rrd_cs.op2_sel
    io.rrd_uop.ctrl.imm_sel := rrd_cs.imm_sel
-   io.rrd_uop.ctrl.op_fcn  := rrd_cs.op_fcn.toBits
+   io.rrd_uop.ctrl.op_fcn  := rrd_cs.op_fcn.asUInt()
    io.rrd_uop.ctrl.fcn_dw  := rrd_cs.fcn_dw.toBool
    io.rrd_uop.ctrl.is_load := io.rrd_uop.uopc === uopLD
    io.rrd_uop.ctrl.is_sta  := io.rrd_uop.uopc === uopSTA || io.rrd_uop.uopc === uopAMO_AG

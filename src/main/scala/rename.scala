@@ -226,7 +226,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
 
    for (w <- 0 until pl_width)
    {
-      requested_pregs_oh(w) := Vec(requested_pregs_oh_array(w)).toBits
+      requested_pregs_oh(w) := Vec(requested_pregs_oh_array(w)).asUInt()
       requested_pregs(w) := PriorityEncoder(requested_pregs_oh(w))
    }
 
@@ -413,7 +413,7 @@ class BusyTable(pipeline_width:Int, num_read_ports:Int, num_wb_ports:Int)(implic
       io.p_rs_busy(ridx) := (table_bsy(io.p_rs(ridx)) && !just_cleared)
    }
 
-   io.debug.bsy_table := table_bsy.toBits
+   io.debug.bsy_table := table_bsy.asUInt()
 }
 
 //-------------------------------------------------------------
@@ -731,7 +731,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
    io.get_pred.info := prediction_copies(io.get_pred.br_tag)
 
    val temp = Wire(new BranchPredictionResp)
-   println("\t\tPrediction Snapshots: " + temp.toBits.getWidth + "-bits, " + MAX_BR_COUNT + " entries")
+   println("\t\tPrediction Snapshots: " + temp.asUInt().getWidth + "-bits, " + MAX_BR_COUNT + " entries")
 
    //-------------------------------------------------------------
    // Outputs

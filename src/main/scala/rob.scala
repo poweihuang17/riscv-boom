@@ -284,12 +284,12 @@ class Rob(width: Int
 
    io.get_pc.curr_pc := curr_row_pc + Cat(GetBankIdx(io.get_pc.rob_idx), Bits(0,2))
 
-   val next_bank_idx = if (width == 1) UInt(0) else PriorityEncoder(rob_brt_vals.toBits)
+   val next_bank_idx = if (width == 1) UInt(0) else PriorityEncoder(rob_brt_vals.asUInt())
 
    // TODO is this logic broken if the ROB can fill up completely?
    val rob_pc_hob_next_val = rob_brt_vals.reduce(_|_)
 
-   val bypass_next_bank_idx = if (width == 1) UInt(0) else PriorityEncoder(io.dis_valids.toBits)
+   val bypass_next_bank_idx = if (width == 1) UInt(0) else PriorityEncoder(io.dis_valids.asUInt())
    val bypass_next_pc = (io.dis_uops(0).pc.toSInt & SInt(-(DECODE_WIDTH*coreInstBytes))).toUInt +
                         Cat(bypass_next_bank_idx, Bits(0,2))
 
@@ -737,8 +737,8 @@ class Rob(width: Int
    // dispatch the rest of it.
    // update when committed ALL valid instructions in commit_bundle
 
-   finished_committing_row := (io.commit.valids.toBits =/= Bits(0)) &&
-                              ((will_commit.toBits ^ rob_head_vals.toBits) === Bits(0)) &&
+   finished_committing_row := (io.commit.valids.asUInt() =/= Bits(0)) &&
+                              ((will_commit.asUInt() ^ rob_head_vals.asUInt()) === Bits(0)) &&
                               !(r_partial_row && rob_head === rob_tail)
    when (finished_committing_row)
    {
@@ -756,7 +756,7 @@ class Rob(width: Int
    {
       rob_tail := WrapInc(GetRowIdx(io.brinfo.rob_idx), num_rob_rows)
    }
-   .elsewhen (io.dis_valids.toBits =/= Bits(0) && !io.dis_partial_stall)
+   .elsewhen (io.dis_valids.asUInt() =/= Bits(0) && !io.dis_partial_stall)
    {
       rob_tail := WrapInc(rob_tail, num_rob_rows)
    }
@@ -781,7 +781,7 @@ class Rob(width: Int
    // also must handle rob_pc valid logic.
    val full = WrapInc(rob_tail, num_rob_rows) === rob_head
 
-   io.empty := (rob_head === rob_tail) && (rob_head_vals.toBits === Bits(0))
+   io.empty := (rob_head === rob_tail) && (rob_head_vals.asUInt() === Bits(0))
 
    io.curr_rob_tail := rob_tail
 
@@ -895,7 +895,7 @@ class Rob(width: Int
       io.commit.ld_mask(w) := io.commit.valids(w) && rob_head_is_load(w)
    }
 
-   io.com_load_is_at_rob_head := rob_head_is_load(PriorityEncoder(rob_head_vals.toBits))
+   io.com_load_is_at_rob_head := rob_head_is_load(PriorityEncoder(rob_head_vals.asUInt()))
 
    //--------------------------------------------------
    // Handle passing out signals to printf in dpath

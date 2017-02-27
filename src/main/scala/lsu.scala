@@ -357,7 +357,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
    val exe_vaddr   = Mux(will_fire_sta_retry,  saq_addr(stq_retry_idx),
                      Mux(will_fire_load_retry, laq_addr(laq_retry_idx),
-                                               io.exe_resp.bits.addr.toBits))
+                                               io.exe_resp.bits.addr.asUInt()))
 
    val dtlb = Module(new rocket.TLB()(p.alterPartial({case uncore.agents.CacheName => "L1D"})))
    io.ptw <> dtlb.io.ptw
@@ -543,7 +543,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    when (will_fire_std_incoming)
    {
       sdq_val (io.exe_resp.bits.uop.stq_idx) := Bool(true)
-      sdq_data(io.exe_resp.bits.uop.stq_idx) := io.exe_resp.bits.data.toBits
+      sdq_data(io.exe_resp.bits.uop.stq_idx) := io.exe_resp.bits.data.asUInt()
    }
 
 
@@ -706,7 +706,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
 
    val forwarding_age_logic = Module(new ForwardingAgeLogic(num_st_entries))
-   forwarding_age_logic.io.addr_matches    := forwarding_matches.toBits()
+   forwarding_age_logic.io.addr_matches    := forwarding_matches.asUInt()
    forwarding_age_logic.io.youngest_st_idx := laq_uop(Reg(next=exe_ld_uop.ldq_idx)).stq_idx
 
    when (mem_fired_ld && forwarding_age_logic.io.forwarding_val && !tlb_miss)
@@ -731,7 +731,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    // Kill load request to mem if address matches (we will either sleep load, or forward data) or TLB miss.
    // Also kill load request if load address matches an older, unexecuted load.
    io.memreq_kill     := (mem_ld_used_tlb && (mem_tlb_miss || Reg(next=pf_ld || ma_ld))) ||
-                         (mem_fired_ld && ldst_addr_conflicts.toBits =/= UInt(0)) ||
+                         (mem_fired_ld && ldst_addr_conflicts.asUInt() =/= UInt(0)) ||
                          (mem_fired_ld && ldld_addr_conflict) ||
                          mem_ld_killed ||
                          (mem_fired_st && io.nack.valid && !io.nack.isload)
@@ -763,7 +763,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
                         sdq_val(wb_forward_std_idx) &&
                         !(io.nack.valid && io.nack.cache_nack)
    }
-   io.forward_data := LoadDataGenerator(sdq_data(wb_forward_std_idx).toBits, wb_uop.mem_typ)
+   io.forward_data := LoadDataGenerator(sdq_data(wb_forward_std_idx).asUInt(), wb_uop.mem_typ)
    io.forward_uop  := wb_uop
 
 
@@ -921,9 +921,9 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    // detect which loads get marked as failures, but broadcast to the ROB the oldest failing load
    // TODO encapsulate this in an age-based  priority-encoder
 //   val l_idx = AgePriorityEncoder((Vec(Vec.tabulate(num_ld_entries)(i => failed_loads(i) && UInt(i) >= laq_head)
-//   ++ failed_loads)).toBits)
+//   ++ failed_loads)).asUInt())
    val temp_bits = (Vec(Vec.tabulate(num_ld_entries)(i =>
-      failed_loads(i) && UInt(i) >= laq_head) ++ failed_loads)).toBits
+      failed_loads(i) && UInt(i) >= laq_head) ++ failed_loads)).asUInt()
    val l_idx = PriorityEncoder(temp_bits)
 
    // TODO always pad out the input to PECircular() to pow2
@@ -1192,13 +1192,13 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
    // TODO is this the most efficient way to compute the live store mask?
    live_store_mask := next_live_store_mask &
-                        ~(st_brkilled_mask.toBits) &
-                        ~(st_exc_killed_mask.toBits)
+                        ~(st_brkilled_mask.asUInt()) &
+                        ~(st_exc_killed_mask.asUInt())
 
    //-------------------------------------------------------------
 
-   val laq_maybe_full = (laq_allocated.toBits =/= UInt(0))
-   val stq_maybe_full = (stq_entry_val.toBits =/= UInt(0))
+   val laq_maybe_full = (laq_allocated.asUInt() =/= UInt(0))
+   val stq_maybe_full = (stq_entry_val.asUInt() =/= UInt(0))
 
    var laq_is_full = Bool(false)
    var stq_is_full = Bool(false)
@@ -1341,7 +1341,7 @@ class ForwardingAgeLogic(num_entries: Int)(implicit p: Parameters) extends BoomM
 
    // Priority encoder with moving tail: double length
    val matches = Wire(UInt(width = 2*num_entries))
-   matches := Cat(io.addr_matches & age_mask.toBits,
+   matches := Cat(io.addr_matches & age_mask.asUInt(),
                   io.addr_matches)
 
 

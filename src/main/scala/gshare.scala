@@ -79,7 +79,7 @@ class GShareBrPredictor(
    val resp_info = Wire(new GShareResp(log2Up(num_entries)))
    resp_info.index      := RegNext(RegNext(r_idx))
    io.resp.bits.takens  := counters.io.s2_r_out
-   io.resp.bits.info    := resp_info.toBits
+   io.resp.bits.info    := resp_info.asUInt()
 
    // Always overrule the BTB, which will almost certainly have less history.
    io.resp.valid := Bool(true) && !this.disable_bpd

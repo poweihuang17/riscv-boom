@@ -110,7 +110,7 @@ class PTableDualPorted(
       p_table.write(waddr, wdata, wmask)
    }
 
-   io.s2_r_out := RegEnable(p_table.read(this.ridx).toBits, !io.stall)
+   io.s2_r_out := RegEnable(p_table.read(this.ridx).asUInt(), !io.stall)
 }
 
 // Read p-table every cycle for a prediction.
@@ -135,8 +135,8 @@ class PTableBanked(
 
    val ren_0   = rbank === UInt(0)
    val ren_1   = rbank === UInt(1)
-   val rout_0  = RegEnable(p_table_0.read(getRowIdx(ridx), ren_0).toBits, !io.stall)
-   val rout_1  = RegEnable(p_table_1.read(getRowIdx(ridx), ren_1).toBits, !io.stall)
+   val rout_0  = RegEnable(p_table_0.read(getRowIdx(ridx), ren_0).asUInt(), !io.stall)
+   val rout_1  = RegEnable(p_table_1.read(getRowIdx(ridx), ren_1).asUInt(), !io.stall)
    val wdata   = Vec(io.update.bits.new_value.toBools)
    val wmask = io.update.bits.executed.toBools
 
@@ -190,10 +190,10 @@ class HTable(
    val h_raddr = io.update.bits.index
    io.pwq_enq.valid          := RegNext(h_ren || io.update.bits.do_initialize)
    io.pwq_enq.bits.index     := RegNext(h_raddr)
-   io.pwq_enq.bits.executed  := RegNext(io.update.bits.executed.toBits)
+   io.pwq_enq.bits.executed  := RegNext(io.update.bits.executed.asUInt())
    io.pwq_enq.bits.new_value := Mux(RegNext(io.update.bits.do_initialize),
-                                    RegNext(io.update.bits.takens.toBits),
-                                    h_table.read(h_raddr, h_ren).toBits)
+                                    RegNext(io.update.bits.takens.asUInt()),
+                                    h_table.read(h_raddr, h_ren).asUInt())
 }
 
 
