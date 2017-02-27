@@ -62,11 +62,11 @@ abstract class IssueUnit(num_issue_slots: Int, issue_width: Int, num_wakeup_port
    //-------------------------------------------------------------
    // Issue Table
 
-   val issue_slots = Vec.fill(num_issue_slots) {Module(new IssueSlot(num_wakeup_ports)).io}
+   val issue_slots = Seq.fill(num_issue_slots)(Module(new IssueSlot(num_wakeup_ports)))
 
    //-------------------------------------------------------------
 
-   assert (PopCount(issue_slots.map(s => s.grant)) <= issue_width.U, "Issue window giving out too many grants.")
+   assert (PopCount(issue_slots.map(s => s.io.grant)) <= issue_width.U, "Issue window giving out too many grants.")
 
    //-------------------------------------------------------------
 
@@ -91,28 +91,28 @@ abstract class IssueUnit(num_issue_slots: Int, issue_width: Int, num_wakeup_port
          printf("  integer_issue_slot[%d](%c)(Req:%c):wen=%c P:(%c,%c,%c) OP:(%d,%d,%d) PDST:%d %c [[DASM(%x)]" +
                " 0x%x: %d] ri:%d bm=%d imm=0x%x\n"
             , i.U(log2Up(num_issue_slots).W)
-            , Mux(issue_slots(i).valid, Str("V"), Str("-"))
-//            , Mux(issue_slots(i).request, Str(u_red + "R" + end), Str(grn + "-" + end))
-//            , Mux(issue_slots(i).in_uop.valid, Str(u_wht + "W" + end),  Str(grn + " " + end))
-            , Mux(issue_slots(i).request, Str("R"), Str("-"))
-            , Mux(issue_slots(i).in_uop.valid, Str("W"),  Str(" "))
-            , Mux(issue_slots(i).debug.p1, Str("!"), Str(" "))
-            , Mux(issue_slots(i).debug.p2, Str("!"), Str(" "))
-            , Mux(issue_slots(i).debug.p3, Str("!"), Str(" "))
-            , issue_slots(i).uop.pop1
-            , issue_slots(i).uop.pop2
-            , issue_slots(i).uop.pop3
-            , issue_slots(i).uop.pdst
-            , Mux(issue_slots(i).uop.dst_rtype === RT_FIX, Str("X"),
-              Mux(issue_slots(i).uop.dst_rtype === RT_X, Str("-"),
-              Mux(issue_slots(i).uop.dst_rtype === RT_FLT, Str("f"),
-              Mux(issue_slots(i).uop.dst_rtype === RT_PAS, Str("C"), Str("?")))))
-            , issue_slots(i).uop.inst
-            , issue_slots(i).uop.pc(31,0)
-            , issue_slots(i).uop.uopc
-            , issue_slots(i).uop.rob_idx
-            , issue_slots(i).uop.br_mask
-            , issue_slots(i).uop.imm_packed
+            , Mux(issue_slots(i).io.valid, Str("V"), Str("-"))
+//            , Mux(issue_slots(i).io.request, Str(u_red + "R" + end), Str(grn + "-" + end))
+//            , Mux(issue_slots(i).io.in_uop.valid, Str(u_wht + "W" + end),  Str(grn + " " + end))
+            , Mux(issue_slots(i).io.request, Str("R"), Str("-"))
+            , Mux(issue_slots(i).io.in_uop.valid, Str("W"),  Str(" "))
+            , Mux(issue_slots(i).io.debug.p1, Str("!"), Str(" "))
+            , Mux(issue_slots(i).io.debug.p2, Str("!"), Str(" "))
+            , Mux(issue_slots(i).io.debug.p3, Str("!"), Str(" "))
+            , issue_slots(i).io.uop.pop1
+            , issue_slots(i).io.uop.pop2
+            , issue_slots(i).io.uop.pop3
+            , issue_slots(i).io.uop.pdst
+            , Mux(issue_slots(i).io.uop.dst_rtype === RT_FIX, Str("X"),
+              Mux(issue_slots(i).io.uop.dst_rtype === RT_X, Str("-"),
+              Mux(issue_slots(i).io.uop.dst_rtype === RT_FLT, Str("f"),
+              Mux(issue_slots(i).io.uop.dst_rtype === RT_PAS, Str("C"), Str("?")))))
+            , issue_slots(i).io.uop.inst
+            , issue_slots(i).io.uop.pc(31,0)
+            , issue_slots(i).io.uop.uopc
+            , issue_slots(i).io.uop.rob_idx
+            , issue_slots(i).io.uop.br_mask
+            , issue_slots(i).io.uop.imm_packed
             )
       }
    }

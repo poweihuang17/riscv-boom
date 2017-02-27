@@ -27,12 +27,12 @@ class IssueUnitStatic(num_issue_slots: Int, issue_width: Int, num_wakeup_ports: 
    val entry_wen_oh  = Vec.fill(num_issue_slots){ Wire(Bits(DISPATCH_WIDTH.W)) }
    for (i <- 0 until num_issue_slots)
    {
-      issue_slots(i).in_uop.valid := entry_wen_oh(i).orR
-      issue_slots(i).in_uop.bits  := Mux1H(entry_wen_oh(i), dis_uops)
-      issue_slots(i).wakeup_dsts  := io.wakeup_pdsts
-      issue_slots(i).brinfo       := io.brinfo
-      issue_slots(i).kill         := io.flush_pipeline
-      issue_slots(i).clear        := false.B
+      issue_slots(i).io.in_uop.valid := entry_wen_oh(i).orR
+      issue_slots(i).io.in_uop.bits  := Mux1H(entry_wen_oh(i), dis_uops)
+      issue_slots(i).io.wakeup_dsts  := io.wakeup_pdsts
+      issue_slots(i).io.brinfo       := io.brinfo
+      issue_slots(i).io.kill         := io.flush_pipeline
+      issue_slots(i).io.clear        := false.B
    }
 
    //-------------------------------------------------------------
@@ -46,7 +46,7 @@ class IssueUnitStatic(num_issue_slots: Int, issue_width: Int, num_wakeup_ports: 
    for (i <- 0 until num_issue_slots)
    {
       var next_allocated = Wire(Vec(DISPATCH_WIDTH, Bool()))
-      var can_allocate = !(issue_slots(i).valid)
+      var can_allocate = !(issue_slots(i).io.valid)
 
       for (w <- 0 until DISPATCH_WIDTH)
       {
@@ -106,9 +106,9 @@ class IssueUnitStatic(num_issue_slots: Int, issue_width: Int, num_wakeup_ports: 
 
    for (i <- 0 until num_requestors)
    {
-      lo_request_not_satisfied(i) = issue_slots(i).request
-      hi_request_not_satisfied(i) = issue_slots(i).request_hp
-      issue_slots(i).grant := false.B // default
+      lo_request_not_satisfied(i) = issue_slots(i).io.request
+      hi_request_not_satisfied(i) = issue_slots(i).io.request_hp
+      issue_slots(i).io.grant := false.B // default
    }
 
 
@@ -119,13 +119,13 @@ class IssueUnitStatic(num_issue_slots: Int, issue_width: Int, num_wakeup_ports: 
       // first look for high priority requests
       for (i <- 0 until num_requestors)
       {
-         val can_allocate = (issue_slots(i).uop.fu_code & io.fu_types(w)) =/= 0.U
+         val can_allocate = (issue_slots(i).io.uop.fu_code & io.fu_types(w)) =/= 0.U
 
          when (hi_request_not_satisfied(i) && can_allocate && !port_issued)
          {
-            issue_slots(i).grant := true.B
-            io.iss_valids(w)     := true.B
-            io.iss_uops(w)       := issue_slots(i).uop
+            issue_slots(i).io.grant := true.B
+            io.iss_valids(w)        := true.B
+            io.iss_uops(w)          := issue_slots(i).io.uop
          }
 
          val port_already_in_use     = port_issued
@@ -139,13 +139,13 @@ class IssueUnitStatic(num_issue_slots: Int, issue_width: Int, num_wakeup_ports: 
       // now look for low priority requests
       for (i <- 0 until num_requestors)
       {
-         val can_allocate = (issue_slots(i).uop.fu_code & io.fu_types(w)) =/= 0.U
+         val can_allocate = (issue_slots(i).io.uop.fu_code & io.fu_types(w)) =/= 0.U
 
          when (lo_request_not_satisfied(i) && can_allocate && !port_issued)
          {
-            issue_slots(i).grant := true.B
-            io.iss_valids(w)     := true.B
-            io.iss_uops(w)       := issue_slots(i).uop
+            issue_slots(i).io.grant := true.B
+            io.iss_valids(w)        := true.B
+            io.iss_uops(w)          := issue_slots(i).io.uop
          }
 
          val port_already_in_use     = port_issued

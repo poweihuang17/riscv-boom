@@ -194,7 +194,7 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
    // we know the store succeeded if it was not nacked
    val cache_load_ack = io.dmem.resp.valid && io.dmem.resp.bits.has_data
 
-   val inflight_load_buffer  = Vec.fill(max_num_inflight) {Module(new LoadReqSlot()).io}
+   val inflight_load_buffer = Seq.fill(max_num_inflight)(Module(new LoadReqSlot()))
 
    val m1_inflight_tag  = Wire(Bits()) // one cycle ago, aka now in the Mem1 Stage
    val m2_inflight_tag  = Wire(Bits()) // two cycles ago, aka now in the Mem2 Stage
@@ -206,7 +206,7 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
    for (i <- 0 until max_num_inflight)
    {
       // don't clr random entry, make sure m1_tag is correct
-      inflight_load_buffer(i).clear       := (cache_load_ack && io.dmem.resp.bits.tag === i.U) ||
+      inflight_load_buffer(i).io.clear    := (cache_load_ack && io.dmem.resp.bits.tag === i.U) ||
                                              (io.dmem.s2_nack &&
                                                 (m2_req_uop.is_load || m2_req_uop.is_amo) &&
                                                 m2_inflight_tag === i.U &&
@@ -214,9 +214,9 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
                                              (io.core.req.bits.kill &&
                                                 m1_inflight_tag === i.U &&
                                                 Reg(next=(enq_val && enq_rdy)))
-      inflight_load_buffer(i).brinfo      := io.core.brinfo
-      inflight_load_buffer(i).flush_pipe  := io.core.flush_pipe
-      inflight_load_buffer(i).in_uop      := io.core.req.bits.uop
+      inflight_load_buffer(i).io.brinfo      := io.core.brinfo
+      inflight_load_buffer(i).io.flush_pipe  := io.core.flush_pipe
+      inflight_load_buffer(i).io.in_uop      := io.core.req.bits.uop
    }
 
 
@@ -226,7 +226,7 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
 
    for (i <- max_num_inflight-1 to 0 by -1)
    {
-      when (!inflight_load_buffer(i).valid)
+      when (!inflight_load_buffer(i).io.valid)
       {
          enq_idx := i.U
       }
@@ -236,7 +236,7 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
    enq_rdy := false.B
    for (i <- 0 until max_num_inflight)
    {
-      when (!inflight_load_buffer(i).valid && io.dmem.req.ready)
+      when (!inflight_load_buffer(i).io.valid && io.dmem.req.ready)
       {
          enq_rdy := true.B
       }
@@ -254,7 +254,7 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
 
    for (i <- 0 until max_num_inflight)
    {
-      inflight_load_buffer(i).wen := enq_idx_1h(i)
+      inflight_load_buffer(i).io.wen := enq_idx_1h(i)
    }
 
    // NOTE: if !enq_rdy, then we have to kill the memory request, and nack the LSU
@@ -289,7 +289,6 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
 //
 //      prefetcher.io.cache.req.ready := !io.core.req.valid && nbdcache.io.cpu.req.ready
 
-
    //------------------------------------------------------------
    // hook up requests
 
@@ -319,14 +318,16 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
 
    // TODO add entry valid bit?
    val resp_tag = io.dmem.resp.bits.tag
+   val inflight_load_buffer_was_killed = Vec(inflight_load_buffer map (_.io.was_killed))
+   val inflight_load_buffer_out_uop = Vec(inflight_load_buffer map (_.io.out_uop))
 
    io.core.resp.valid := Mux(cache_load_ack,
-                           !inflight_load_buffer(resp_tag).was_killed, // hide loads that were killed
+                           !(inflight_load_buffer_was_killed(resp_tag)), // hide loads that were killed
                          Mux(was_store_and_not_amo && !io.dmem.s2_nack && !Reg(next=io.core.req.bits.kill),
                            true.B,    // stores succeed quietly, so valid if no nack
                            false.B))  // filter out nacked responses
 
-   io.core.resp.bits.uop := Mux(cache_load_ack, inflight_load_buffer(resp_tag).out_uop, m2_req_uop)
+   io.core.resp.bits.uop := Mux(cache_load_ack, inflight_load_buffer_out_uop(resp_tag), m2_req_uop)
 
    // comes out the same cycle as the resp.valid signal
    // but is a few gates slower than resp.bits.data
