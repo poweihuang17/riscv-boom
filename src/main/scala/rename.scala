@@ -484,7 +484,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
    //-------------------------------------------------------------
    // Rename Table
 
-   val map_table_io = Vec.fill(LOGICAL_REG_COUNT) { Module(new RenameMapTableElement(DECODE_WIDTH)).io }
+   val map_table_io = Seq.fill(LOGICAL_REG_COUNT)(Module(new RenameMapTableElement(DECODE_WIDTH)).io)
 
    for (i <- 0 until LOGICAL_REG_COUNT)
    {
@@ -517,26 +517,30 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
    }
 
    // backwards, because rollback must give highest priority to 0 (the oldest instruction)
+   val map_table_rollback_wen = Vec(map_table_io map (_.rollback_wen))
+   val map_table_rollback_stale_pdst = Vec(map_table_io map (_.rollback_stale_pdst))
    for (w <- pl_width-1 to 0 by -1)
    {
       val ldst = io.com_uops(w).ldst
 
       when (io.com_rbk_valids(w))
       {
-         map_table_io(ldst).rollback_wen        := Bool(true)
-         map_table_io(ldst).rollback_stale_pdst := io.com_uops(w).stale_pdst
+         map_table_rollback_wen(ldst)        := Bool(true)
+         map_table_rollback_stale_pdst(ldst) := io.com_uops(w).stale_pdst
       }
    }
 
    if (ENABLE_COMMIT_MAP_TABLE)
    {
+      val map_table_commit_wen = Vec(map_table_io map (_.commit_wen))
+      val map_table_commit_pdst = Vec(map_table_io map (_.commit_pdst))
       for (w <- 0 until pl_width)
       {
          val ldst = io.com_uops(w).ldst
          when (io.com_valids(w) && (io.com_uops(w).dst_rtype === RT_FIX || io.com_uops(w).dst_rtype === RT_FLT))
          {
-            map_table_io(ldst).commit_wen := Bool(true)
-            map_table_io(ldst).commit_pdst := io.com_uops(w).pdst
+            map_table_commit_wen(ldst) := Bool(true)
+            map_table_commit_pdst(ldst) := io.com_uops(w).pdst
          }
       }
    }
@@ -546,14 +550,14 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
    def map_table_prs1(w:Int) = map_table_output(w+0*pl_width)
    def map_table_prs2(w:Int) = map_table_output(w+1*pl_width)
    def map_table_prs3(w:Int) = map_table_output(w+2*pl_width)
-
+   val map_table_element = Vec(map_table_io map (_.element))
 
    for (w <- 0 until pl_width)
    {
-      map_table_prs1(w) := map_table_io(io.ren_uops(w).lrs1).element
-      map_table_prs2(w) := map_table_io(io.ren_uops(w).lrs2).element
+      map_table_prs1(w) := map_table_element(io.ren_uops(w).lrs1)
+      map_table_prs2(w) := map_table_element(io.ren_uops(w).lrs2)
       if (max_operands > 2)
-         map_table_prs3(w) := map_table_io(io.ren_uops(w).lrs3).element
+         map_table_prs3(w) := map_table_element(io.ren_uops(w).lrs3)
       else
          map_table_prs3(w) := UInt(0)
    }
@@ -604,7 +608,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
       io.ren_uops(w).pop1                       := MuxCase(io.ren_uops(w).lrs1, rs1_cases)
       io.ren_uops(w).pop2                       := MuxCase(io.ren_uops(w).lrs2, rs2_cases)
       if (max_operands > 2){io.ren_uops(w).pop3 := MuxCase(io.ren_uops(w).lrs3, rs3_cases)}
-      io.ren_uops(w).stale_pdst                 := MuxCase(map_table_io(io.ren_uops(w).ldst).element, stale_cases)
+      io.ren_uops(w).stale_pdst                 := MuxCase(map_table_element(io.ren_uops(w).ldst), stale_cases)
 
    }
 

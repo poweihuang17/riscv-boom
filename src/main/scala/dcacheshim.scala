@@ -193,7 +193,7 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
    // we know the store succeeded if it was not nacked
    val cache_load_ack = io.dmem.resp.valid && io.dmem.resp.bits.has_data
 
-   val inflight_load_buffer  = Vec.fill(max_num_inflight) {Module(new LoadReqSlot()).io}
+   val inflight_load_buffer = Seq.fill(max_num_inflight)(Module(new LoadReqSlot()).io)
 
    val m1_inflight_tag  = Wire(Bits()) // one cycle ago, aka now in the Mem1 Stage
    val m2_inflight_tag  = Wire(Bits()) // two cycles ago, aka now in the Mem2 Stage
@@ -318,14 +318,16 @@ class DCacheShim(implicit p: Parameters) extends BoomModule()(p)
 
    // TODO add entry valid bit?
    val resp_tag = io.dmem.resp.bits.tag
+   val inflight_load_buffer_killed = Vec(inflight_load_buffer map (_.was_killed))
+   val inflight_load_buffer_out_uop = Vec(inflight_load_buffer map (_.out_uop))
 
    io.core.resp.valid := Mux(cache_load_ack,
-                           !inflight_load_buffer(resp_tag).was_killed, // hide loads that were killed
+                           !inflight_load_buffer_killed(resp_tag), // hide loads that were killed
                          Mux(was_store_and_not_amo && !io.dmem.s2_nack && !Reg(next=io.core.req.bits.kill),
                            Bool(true),    // stores succeed quietly, so valid if no nack
                            Bool(false)))  // filter out nacked responses
 
-   io.core.resp.bits.uop := Mux(cache_load_ack, inflight_load_buffer(resp_tag).out_uop, m2_req_uop)
+   io.core.resp.bits.uop := Mux(cache_load_ack, inflight_load_buffer_out_uop(resp_tag), m2_req_uop)
 
    // comes out the same cycle as the resp.valid signal
    // but is a few gates slower than resp.bits.data

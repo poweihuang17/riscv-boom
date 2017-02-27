@@ -61,7 +61,7 @@ abstract class IssueUnit(num_issue_slots: Int, issue_width: Int, num_wakeup_port
    //-------------------------------------------------------------
    // Issue Table
 
-   val issue_slots = Vec.fill(num_issue_slots) {Module(new IssueSlot(num_wakeup_ports)).io}
+   val issue_slots = Seq.fill(num_issue_slots)(Module(new IssueSlot(num_wakeup_ports)).io)
 
    //-------------------------------------------------------------
 
