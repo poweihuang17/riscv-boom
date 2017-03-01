@@ -207,19 +207,19 @@ class Rob(width: Int
    val rob_tail = Reg(init = UInt(0, log2Up(num_rob_rows)))
    val rob_tail_idx = rob_tail << UInt(log2Ceil(width))
 
-   val will_commit         = Wire(Vec(width, Bool()))
-   val can_commit          = Wire(Vec(width, Bool()))
-   val can_throw_exception = Wire(Vec(width, Bool()))
-   val rob_head_vals       = Wire(Vec(width, Bool())) // are the instructions at the head valid?
-   val rob_head_is_store   = Wire(Vec(width, Bool()))
-   val rob_head_is_load    = Wire(Vec(width, Bool()))
-   val rob_head_is_branch  = Wire(Vec(width, Bool()))
-   val rob_head_fflags     = Wire(Vec(width, Bits(width=rocket.FPConstants.FLAGS_SZ)))
+   val will_commit         = Seq.fill(width)(Wire(Bool()))
+   val can_commit          = Seq.fill(width)(Wire(Bool()))
+   val can_throw_exception = Seq.fill(width)(Wire(Bool()))
+   val rob_head_vals       = Seq.fill(width)(Wire(Bool())) // are the instructions at the head valid?
+   val rob_head_is_store   = Seq.fill(width)(Wire(Bool()))
+   val rob_head_is_load    = Seq.fill(width)(Wire(Bool()))
+   // val rob_head_is_branch  = Seq.fill(width)(Wire(Bool()))
+   val rob_head_fflags     = Seq.fill(width)(Wire(Bits(width=rocket.FPConstants.FLAGS_SZ)))
 
    // valid bits at the branch target
    // the br_unit needs to verify the target PC, but it must read out the valid bits
    // for that row
-   val rob_brt_vals        = Wire(Vec(width, Bool()))
+   val rob_brt_vals        = Seq.fill(width)(Wire(Bool()))
 
    val exception_thrown = Wire(Bool())
 
@@ -283,12 +283,12 @@ class Rob(width: Int
 
    io.get_pc.curr_pc := curr_row_pc + Cat(GetBankIdx(io.get_pc.rob_idx), Bits(0,2))
 
-   val next_bank_idx = if (width == 1) UInt(0) else PriorityEncoder(rob_brt_vals.toBits)
+   val next_bank_idx = if (width == 1) UInt(0) else PriorityEncoder(Cat(rob_brt_vals.reverse))
 
    // TODO is this logic broken if the ROB can fill up completely?
    val rob_pc_hob_next_val = rob_brt_vals.reduce(_|_)
 
-   val bypass_next_bank_idx = if (width == 1) UInt(0) else PriorityEncoder(io.dis_valids.toBits)
+   val bypass_next_bank_idx = if (width == 1) UInt(0) else PriorityEncoder(Cat(io.dis_valids.reverse))
    val bypass_next_pc = (io.dis_uops(0).pc.toSInt & SInt(-(DECODE_WIDTH*coreInstBytes))).toUInt +
                         Cat(bypass_next_bank_idx, Bits(0,2))
 
@@ -639,8 +639,8 @@ class Rob(width: Int
    // FP Exceptions
    // send fflags bits to the CSRFile to accrue
 
-   val fflags_val = Wire(Vec(width, Bool()))
-   val fflags     = Wire(Vec(width, Bits(width=rocket.FPConstants.FLAGS_SZ)))
+   val fflags_val = Seq.fill(width)(Wire(Bool()))
+   val fflags     = Seq.fill(width)(Wire(Bits(width=rocket.FPConstants.FLAGS_SZ)))
 
    for (w <- 0 until width)
    {
@@ -674,7 +674,7 @@ class Rob(width: Int
    def IsOlder(i0: UInt, i1: UInt, tail: UInt) = (Cat(i0 <= tail, i0) < Cat(i1 <= tail, i1))
    val next_xcpt_uop = Wire(new MicroOp())
    next_xcpt_uop := r_xcpt_uop
-   val dis_xcpts = Wire(Vec(width, Bool()))
+   val dis_xcpts = Seq.fill(width)(Wire(Bool()))
    for (i <- 0 until width)
    {
       dis_xcpts(i) := io.dis_valids(i) && io.dis_uops(i).exception
@@ -698,7 +698,7 @@ class Rob(width: Int
       }
       .elsewhen (!r_xcpt_val && dis_xcpts.reduce(_|_))
       {
-         val idx = dis_xcpts.indexWhere{i: Bool => i}
+         val idx = Vec(dis_xcpts) indexWhere ((b: Bool) => b)
 
          // if no exception yet, dispatch exception wins
          r_xcpt_val      := Bool(true)
@@ -736,8 +736,8 @@ class Rob(width: Int
    // dispatch the rest of it.
    // update when committed ALL valid instructions in commit_bundle
 
-   finished_committing_row := (io.commit.valids.toBits =/= Bits(0)) &&
-                              ((will_commit.toBits ^ rob_head_vals.toBits) === Bits(0)) &&
+   finished_committing_row := (Cat(io.commit.valids.reverse) =/= Bits(0)) &&
+                              ((Cat(will_commit.reverse) ^ Cat(rob_head_vals.reverse)) === Bits(0)) &&
                               !(r_partial_row && rob_head === rob_tail)
    when (finished_committing_row)
    {
@@ -755,7 +755,7 @@ class Rob(width: Int
    {
       rob_tail := WrapInc(GetRowIdx(io.brinfo.rob_idx), num_rob_rows)
    }
-   .elsewhen (io.dis_valids.toBits =/= Bits(0) && !io.dis_partial_stall)
+   .elsewhen (Cat(io.dis_valids.reverse) =/= Bits(0) && !io.dis_partial_stall)
    {
       rob_tail := WrapInc(rob_tail, num_rob_rows)
    }
@@ -780,7 +780,7 @@ class Rob(width: Int
    // also must handle rob_pc valid logic.
    val full = WrapInc(rob_tail, num_rob_rows) === rob_head
 
-   io.empty := (rob_head === rob_tail) && (rob_head_vals.toBits === Bits(0))
+   io.empty := (rob_head === rob_tail) && (Cat(rob_head_vals.reverse) === Bits(0))
 
    io.curr_rob_tail := rob_tail
 
@@ -894,7 +894,7 @@ class Rob(width: Int
       io.commit.ld_mask(w) := io.commit.valids(w) && rob_head_is_load(w)
    }
 
-   io.com_load_is_at_rob_head := rob_head_is_load(PriorityEncoder(rob_head_vals.toBits))
+   io.com_load_is_at_rob_head := Vec(rob_head_is_load)(PriorityEncoder(Cat(rob_head_vals.reverse)))
 
    //--------------------------------------------------
    // Handle passing out signals to printf in dpath

@@ -195,8 +195,8 @@ abstract class PipelinedFunctionalUnit(val num_stages: Int,
 
    if (num_stages > 0)
    {
-      val r_valids = Reg(init = Vec.fill(num_stages) { Bool(false) })
-      val r_uops   = Reg(Vec(num_stages, new MicroOp()))
+      val r_valids = Seq.fill(num_stages)(Reg(init = Bool(false)))
+      val r_uops   = Seq.fill(num_stages)(Reg(new MicroOp()))
 
       // handle incoming request
       r_valids(0) := io.req.valid && !IsKilledByBranch(io.brinfo, io.req.bits.uop) && !io.req.bits.kill
@@ -542,8 +542,8 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
 //   reg_data := alu.io.out
 //   io.resp.bits.data := reg_data
 
-   val r_val  = Reg(init = Vec.fill(num_stages) { Bool(false) })
-   val r_data = Reg(Vec(num_stages, UInt(width=xLen)))
+   val r_val  = Seq.fill(num_stages)(Reg(init = Bool(false)))
+   val r_data = Seq.fill(num_stages)(Reg(UInt(width=xLen)))
    r_val (0) := io.req.valid
    r_data(0) := alu.io.out
    for (i <- 1 until num_stages)

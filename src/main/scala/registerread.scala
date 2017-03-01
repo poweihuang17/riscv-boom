@@ -62,14 +62,14 @@ class RegisterRead(
 {
    val io = new RegisterReadIO(issue_width, num_total_read_ports, num_total_bypass_ports, register_width)
 
-   val rrd_valids       = Wire(Vec(issue_width, Bool()))
-   val rrd_uops         = Wire(Vec(issue_width, new MicroOp()))
+   val rrd_valids       = Seq.fill(issue_width)(Wire(Bool()))
+   val rrd_uops         = Seq.fill(issue_width)(Wire(new MicroOp()))
 
-   val exe_reg_valids   = Reg(init = Vec.fill(issue_width) { Bool(false) })
-   val exe_reg_uops     = Reg(Vec(issue_width, new MicroOp()))
-   val exe_reg_rs1_data = Reg(Vec(issue_width, Bits(width = register_width)))
-   val exe_reg_rs2_data = Reg(Vec(issue_width, Bits(width = register_width)))
-   val exe_reg_rs3_data = Reg(Vec(issue_width, Bits(width = register_width)))
+   val exe_reg_valids   = Seq.fill(issue_width)(Reg(init = Bool(false)))
+   val exe_reg_uops     = Seq.fill(issue_width)(Reg(new MicroOp()))
+   val exe_reg_rs1_data = Seq.fill(issue_width)(Reg(Bits(width = register_width)))
+   val exe_reg_rs2_data = Seq.fill(issue_width)(Reg(Bits(width = register_width)))
+   val exe_reg_rs3_data = Seq.fill(issue_width)(Reg(Bits(width = register_width)))
 
 
    //-------------------------------------------------------------
@@ -92,9 +92,9 @@ class RegisterRead(
    require (num_total_read_ports == num_read_ports_array.reduce(_+_))
 
    val regwidth = if (usingFPU) 65 else 64
-   val rrd_rs1_data   = Wire(Vec(issue_width, Bits(width=regwidth)))
-   val rrd_rs2_data   = Wire(Vec(issue_width, Bits(width=regwidth)))
-   val rrd_rs3_data   = Wire(Vec(issue_width, Bits(width=regwidth)))
+   val rrd_rs1_data   = Seq.fill(issue_width)(Wire(Bits(width=regwidth)))
+   val rrd_rs2_data   = Seq.fill(issue_width)(Wire(Bits(width=regwidth)))
+   val rrd_rs3_data   = Seq.fill(issue_width)(Wire(Bits(width=regwidth)))
 
    var idx = 0 // index into flattened read_ports array
    for (w <- 0 until issue_width)
@@ -138,8 +138,8 @@ class RegisterRead(
    //    -rs3 is used for FPU ops which are NOT bypassed (so don't check
    //       them!).
 
-   val bypassed_rs1_data = Wire(Vec(issue_width, Bits(width = register_width)))
-   val bypassed_rs2_data = Wire(Vec(issue_width, Bits(width = register_width)))
+   val bypassed_rs1_data = Seq.fill(issue_width)(Wire(Bits(width = register_width)))
+   val bypassed_rs2_data = Seq.fill(issue_width)(Wire(Bits(width = register_width)))
 
    for (w <- 0 until issue_width)
    {

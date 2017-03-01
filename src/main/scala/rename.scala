@@ -190,15 +190,15 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
    val allocation_lists = Reg(Vec(MAX_BR_COUNT, Bits(width = num_phys_registers)))
 
    // TODO why is this a Vec? can I do this all on one bit-vector?
-   val enq_mask = Wire(Vec(pl_width, Bits(width = num_phys_registers)))
+   val enq_mask = Seq.fill(pl_width)(Wire(Bits(width = num_phys_registers)))
 
    // ------------------------------------------
    // find new,free physical registers
 
    val requested_pregs_oh_array = Array.fill(pl_width,num_phys_registers){Bool(false)}
-   val requested_pregs_oh       = Wire(Vec(pl_width, Bits(width=num_phys_registers)))
-   val requested_pregs          = Wire(Vec(pl_width, UInt(width=log2Up(num_phys_registers))))
-   var allocated                = Wire(Vec(pl_width, Bool())) // did each inst get allocated a register?
+   val requested_pregs_oh       = Seq.fill(pl_width)(Wire(Bits(width=num_phys_registers)))
+   val requested_pregs          = Seq.fill(pl_width)(Wire(UInt(width=log2Up(num_phys_registers))))
+   var allocated                = Seq.fill(pl_width)(Wire(Bool())) // did each inst get allocated a register?
 
    // init
    for (w <- 0 until pl_width)
@@ -209,7 +209,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
 
    for (i <- 1 until num_phys_registers) // note: p0 stays zero
    {
-      val next_allocated = Wire(Vec(pl_width, Bool()))
+      val next_allocated = Seq.fill(pl_width)(Wire(Bool()))
       var can_allocate = free_list(i)
 
       for (w <- 0 until pl_width)
@@ -225,7 +225,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
 
    for (w <- 0 until pl_width)
    {
-      requested_pregs_oh(w) := Vec(requested_pregs_oh_array(w)).toBits
+      requested_pregs_oh(w) := Cat(requested_pregs_oh_array(w).reverse)
       requested_pregs(w) := PriorityEncoder(requested_pregs_oh(w))
    }
 
@@ -244,8 +244,7 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
 
    // track which allocation_lists just got cleared out by a branch,
    // to enforce a write priority to allocation_lists()
-   val br_cleared = Wire(Vec(MAX_BR_COUNT, Bool()))
-   for (i <- 0 until MAX_BR_COUNT) { br_cleared(i) := Bool(false) }
+   val br_cleared = Vec.fill(MAX_BR_COUNT)(Wire(init=Bool(false)))
 
    for (w <- pl_width-1 to 0 by -1)
    {
@@ -317,8 +316,8 @@ class RenameFreeList(num_phys_registers: Int // number of physical registers
    {
       val committed_free_list = Reg(init=(~Bits(1,num_phys_registers)))
 
-      val com_mask = Wire(Vec(pl_width, Bits(width=num_phys_registers)))
-      val stale_mask = Wire(Vec(pl_width, Bits(width=num_phys_registers)))
+      val com_mask = Seq.fill(pl_width)(Wire(Bits(width=num_phys_registers)))
+      val stale_mask = Seq.fill(pl_width)(Wire(Bits(width=num_phys_registers)))
       for (w <- 0 until pl_width)
       {
          com_mask(w) := Bits(0,width=num_phys_registers)
@@ -412,7 +411,7 @@ class BusyTable(pipeline_width:Int, num_read_ports:Int, num_wb_ports:Int)(implic
       io.p_rs_busy(ridx) := (table_bsy(io.p_rs(ridx)) && !just_cleared)
    }
 
-   io.debug.bsy_table := table_bsy.toBits
+   io.debug.bsy_table := Cat(table_bsy.reverse)
 }
 
 //-------------------------------------------------------------
@@ -465,8 +464,8 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
 {
    val io = new RenameStageIO(pl_width, num_wb_ports)
 
-   val ren_br_vals = Wire(Vec(pl_width, Bool()))
-   val freelist_can_allocate = Wire(Vec(pl_width, Bool()))
+   val ren_br_vals = Seq.fill(pl_width)(Wire(Bool()))
+   val freelist_can_allocate = Seq.fill(pl_width)(Wire(Bool()))
 
    val max_operands = if(usingFPU) 3 else 2
 
@@ -546,7 +545,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
    }
 
    // read out the map-table entries ASAP, then deal with bypassing busy-bits later
-   private val map_table_output = Wire(Vec(pl_width*3, UInt(width=PREG_SZ)))
+   private val map_table_output = Seq.fill(pl_width*3)(Wire(UInt(width=PREG_SZ)))
    def map_table_prs1(w:Int) = map_table_output(w+0*pl_width)
    def map_table_prs2(w:Int) = map_table_output(w+1*pl_width)
    def map_table_prs3(w:Int) = map_table_output(w+2*pl_width)
@@ -563,9 +562,9 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
    }
 
    // Bypass the physical register mappings
-   val prs1_was_bypassed = Wire(Vec(pl_width, Bool()))
-   val prs2_was_bypassed = Wire(Vec(pl_width, Bool()))
-   val prs3_was_bypassed = Wire(Vec(pl_width, Bool()))
+   val prs1_was_bypassed = Seq.fill(pl_width)(Wire(Bool()))
+   val prs2_was_bypassed = Seq.fill(pl_width)(Wire(Bool()))
+   val prs3_was_bypassed = Seq.fill(pl_width)(Wire(Bool()))
 
    for (w <- 0 until pl_width)
    {
@@ -616,7 +615,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
    //-------------------------------------------------------------
    // Busy Table
 
-   val freelist_req_pregs = Wire(Vec(pl_width, UInt(width=PREG_SZ)))
+   val freelist_req_pregs = Seq.fill(pl_width)(Wire(UInt(width=PREG_SZ)))
 
    // 3 WB ports for now
    // 1st is back-to-back bypassable ALU ops
@@ -677,7 +676,7 @@ class RenameStage(pl_width: Int, num_wb_ports: Int)(implicit p: Parameters) exte
                                          io.ren_uops(w).ldst_val &&
                                          (io.ren_uops(w).dst_rtype === RT_FIX || io.ren_uops(w).dst_rtype === RT_FLT))
       }
-      freelist_req_pregs := freelist.io.req_pregs
+      (freelist_req_pregs zip freelist.io.req_pregs) foreach { case (x, y) => x := y }
 
       for (w <- 0 until pl_width)
       {

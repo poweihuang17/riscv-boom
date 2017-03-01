@@ -152,7 +152,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    val laq_failure        = Reg(init = Vec.fill(num_ld_entries) { Bool(false) })  // ordering fail, must retry (at commit time, which requires a rollback)
    val laq_uop            = Reg(Vec(num_ld_entries, new MicroOp()))
    //laq_uop.stq_idx between oldest and youngest (dep_mask can't establish age :( ), "aka store coloring" if you're Intel
-//   val laq_request   = Vec.fill(num_ld_entries) { Reg(resetVal = Bool(false)) } // TODO sleeper load requesting issue to memory (perhaps stores broadcast, sees its store-set finished up)
+//   val laq_request   = Reg(init = Vec.fill(num_ld_entries) { Bool(false) }) // TODO sleeper load requesting issue to memory (perhaps stores broadcast, sees its store-set finished up)
 
 
    // track window of stores we depend on
@@ -160,9 +160,9 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    val laq_forwarded_std_val  = Reg(Vec(num_ld_entries, Bool()))
    val laq_forwarded_stq_idx  = Reg(Vec(num_ld_entries, UInt(width = MEM_ADDR_SZ)))    // which store did get store-load forwarded data from? compare later to see I got things correct
    val debug_laq_put_to_sleep = Reg(Vec(num_ld_entries, Bool()))                       // did a load get put to sleep at least once?
-//   val laq_st_wait_mask = Vec.fill(num_ld_entries) { Reg() { Bits(width = num_st_entries) } }// TODO list of stores we might depend on whose addresses are not yet computed
-//   val laq_block_val    = Vec.fill(num_ld_entries) { Reg() { Bool() } }                     // TODO something is blocking us from executing
-//   val laq_block_id     = Vec.fill(num_ld_entries) { Reg() { UInt(width = MEM_ADDR_SZ) } }  // TODO something is blocking us from executing, listen for this ID to wakeup
+//   val laq_st_wait_mask = Reg(Vec(num_ld_entries, Bits(width = num_st_entries))) // TODO list of stores we might depend on whose addresses are not yet computed
+//   val laq_block_val    = Reg(Vec(num_ld_entries, Bool()))                       // TODO something is blocking us from executing
+//   val laq_block_id     = Reg(Vec(num_ld_entries, UInt(width = MEM_ADDR_SZ)))  // TODO something is blocking us from executing, listen for this ID to wakeup
 
    // Store-Address Queue
    val saq_val       = Reg(Vec(num_st_entries, Bool()))
@@ -356,7 +356,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
    val exe_vaddr   = Mux(will_fire_sta_retry,  saq_addr(stq_retry_idx),
                      Mux(will_fire_load_retry, laq_addr(laq_retry_idx),
-                                               io.exe_resp.bits.addr.toBits))
+                                               io.exe_resp.bits.addr))
 
    val dtlb = Module(new rocket.TLB()(p.alterPartial({case uncore.agents.CacheName => "L1D"})))
    io.ptw <> dtlb.io.ptw
@@ -512,7 +512,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
                                           (will_fire_load_retry && pf_ld)
    }
 
-   assert (PopCount(Vec(will_fire_store_commit, will_fire_load_incoming, will_fire_load_retry, will_fire_load_wakeup))
+   assert (PopCount(Seq(will_fire_store_commit, will_fire_load_incoming, will_fire_load_retry, will_fire_load_wakeup))
       <= UInt(1), "Multiple requestors firing to the data cache.")
 
 
@@ -542,7 +542,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    when (will_fire_std_incoming)
    {
       sdq_val (io.exe_resp.bits.uop.stq_idx) := Bool(true)
-      sdq_data(io.exe_resp.bits.uop.stq_idx) := io.exe_resp.bits.data.toBits
+      sdq_data(io.exe_resp.bits.uop.stq_idx) := io.exe_resp.bits.data
    }
 
 
@@ -632,12 +632,12 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    val st_dep_mask = laq_st_dep_mask(Reg(next=exe_ld_uop.ldq_idx))
 
    // do the double-word addr match? (doesn't necessarily mean a conflict or forward)
-   val dword_addr_matches = Wire(Vec(num_st_entries, Bool()))
+   val dword_addr_matches = Seq.fill(num_st_entries)(Wire(Bool()))
    // if there is some overlap on the bytes, you may need to put to sleep the load
    // (either data not ready, or not a perfect match between addr and type)
-   val ldst_addr_conflicts   = Wire(Vec(num_st_entries, Bool()))
+   val ldst_addr_conflicts = Seq.fill(num_st_entries)(Wire(Bool()))
    // a full address match
-   val forwarding_matches  = Wire(Vec(num_st_entries, Bool()))
+   val forwarding_matches = Seq.fill(num_st_entries)(Wire(Bool()))
 
    val force_ld_to_sleep = Wire(Bool())
    force_ld_to_sleep := Bool(false)
@@ -705,7 +705,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
 
    val forwarding_age_logic = Module(new ForwardingAgeLogic(num_st_entries))
-   forwarding_age_logic.io.addr_matches    := forwarding_matches.toBits()
+   forwarding_age_logic.io.addr_matches    := Cat(forwarding_matches.reverse)
    forwarding_age_logic.io.youngest_st_idx := laq_uop(Reg(next=exe_ld_uop.ldq_idx)).stq_idx
 
    when (mem_fired_ld && forwarding_age_logic.io.forwarding_val && !tlb_miss)
@@ -730,7 +730,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    // Kill load request to mem if address matches (we will either sleep load, or forward data) or TLB miss.
    // Also kill load request if load address matches an older, unexecuted load.
    io.memreq_kill     := (mem_ld_used_tlb && (mem_tlb_miss || Reg(next=pf_ld || ma_ld))) ||
-                         (mem_fired_ld && ldst_addr_conflicts.toBits =/= UInt(0)) ||
+                         (mem_fired_ld && Cat(ldst_addr_conflicts.reverse) =/= UInt(0)) ||
                          (mem_fired_ld && ldld_addr_conflict) ||
                          mem_ld_killed ||
                          (mem_fired_st && io.nack.valid && !io.nack.isload)
@@ -762,7 +762,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
                         sdq_val(wb_forward_std_idx) &&
                         !(io.nack.valid && io.nack.cache_nack)
    }
-   io.forward_data := LoadDataGenerator(sdq_data(wb_forward_std_idx).toBits, wb_uop.mem_typ)
+   io.forward_data := LoadDataGenerator(sdq_data(wb_forward_std_idx), wb_uop.mem_typ)
    io.forward_uop  := wb_uop
 
 
@@ -805,7 +805,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    val lcam_is_fence   = lcam_uop.is_fence
    val lcam_ldq_idx    = lcam_uop.ldq_idx
    val stq_idx         = lcam_uop.stq_idx
-   val failed_loads    = Wire(Vec(num_ld_entries, Bool()))
+   val failed_loads    = Seq.fill(num_ld_entries)(Wire(Bool()))
    val stld_order_fail = Wire(init = Bool(false))
    val ldld_order_fail = Wire(init = Bool(false))
 
@@ -921,8 +921,9 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    // TODO encapsulate this in an age-based  priority-encoder
 //   val l_idx = AgePriorityEncoder((Vec(Vec.tabulate(num_ld_entries)(i => failed_loads(i) && UInt(i) >= laq_head)
 //   ++ failed_loads)).toBits)
-   val temp_bits = (Vec(Vec.tabulate(num_ld_entries)(i =>
-      failed_loads(i) && UInt(i) >= laq_head) ++ failed_loads)).toBits
+   val temp_bits = Cat((
+     (failed_loads.zipWithIndex map { case (failed_load, i) => failed_load && UInt(i) >= laq_head }) ++
+      failed_loads).reverse)
    val l_idx = PriorityEncoder(temp_bits)
 
    // TODO always pad out the input to PECircular() to pow2
@@ -954,7 +955,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    //-------------------------------------------------------------
    //-------------------------------------------------------------
 
-   val st_brkilled_mask = Wire(Vec(num_st_entries, Bool()))
+   val st_brkilled_mask = Seq.fill(num_st_entries)(Wire(Bool()))
    for (i <- 0 until num_st_entries)
    {
       st_brkilled_mask(i) := Bool(false)
@@ -1131,8 +1132,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
    // Exception / Reset
 
    // for the live_store_mask, need to kill stores that haven't been committed
-   val st_exc_killed_mask = Wire(Vec(num_st_entries, Bool()))
-   (0 until num_st_entries).map(i => st_exc_killed_mask(i) := Bool(false))
+   val st_exc_killed_mask = Seq.fill(num_st_entries)(Wire(init=Bool(false)))
 
    val null_uop = NullMicroOp
 
@@ -1191,13 +1191,13 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters) extends BoomModule()(
 
    // TODO is this the most efficient way to compute the live store mask?
    live_store_mask := next_live_store_mask &
-                        ~(st_brkilled_mask.toBits) &
-                        ~(st_exc_killed_mask.toBits)
+                        ~(Cat(st_brkilled_mask.reverse)) &
+                        ~(Cat(st_exc_killed_mask.reverse))
 
    //-------------------------------------------------------------
 
-   val laq_maybe_full = (laq_allocated.toBits =/= UInt(0))
-   val stq_maybe_full = (stq_entry_val.toBits =/= UInt(0))
+   val laq_maybe_full = (Cat(laq_allocated.reverse) =/= UInt(0))
+   val stq_maybe_full = (Cat(stq_entry_val.reverse) =/= UInt(0))
 
    var laq_is_full = Bool(false)
    var stq_is_full = Bool(false)
@@ -1328,7 +1328,7 @@ class ForwardingAgeLogic(num_entries: Int)(implicit p: Parameters) extends BoomM
    }
 
    // generating mask that zeroes out anything younger than tail
-   val age_mask = Wire(Vec(num_entries, Bool()))
+   val age_mask = Seq.fill(num_entries)(Wire(Bool()))
    for (i <- 0 until num_entries)
    {
       age_mask(i) := Bool(true)
@@ -1340,7 +1340,7 @@ class ForwardingAgeLogic(num_entries: Int)(implicit p: Parameters) extends BoomM
 
    // Priority encoder with moving tail: double length
    val matches = Wire(UInt(width = 2*num_entries))
-   matches := Cat(io.addr_matches & age_mask.toBits,
+   matches := Cat(io.addr_matches & Cat(age_mask.reverse),
                   io.addr_matches)
 
 

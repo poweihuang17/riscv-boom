@@ -112,19 +112,19 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    // Pipeline State Registers and Wires
 
    // Instruction Decode Stage
-   val dec_valids     = Wire(Vec(DECODE_WIDTH, Bool()))  // are the decoded instruction valid? It may be held up though.
-   val dec_uops       = Wire(Vec(DECODE_WIDTH, new MicroOp()))
-   val dec_will_fire  = Wire(Vec(DECODE_WIDTH, Bool()))  // can the instruction fire beyond decode?
+   val dec_valids     = Seq.fill(DECODE_WIDTH)(Wire(Bool()))  // are the decoded instruction valid? It may be held up though.
+   val dec_uops       = Seq.fill(DECODE_WIDTH)(Wire(new MicroOp()))
+   val dec_will_fire  = Seq.fill(DECODE_WIDTH)(Wire(Bool()))  // can the instruction fire beyond decode?
                                                          // (can still be stopped in ren or dis)
    val dec_rdy        = Wire(Bool())
 
    // Dispatch Stage
-   val dis_valids            = Wire(Vec(DISPATCH_WIDTH, Bool())) // true if uop WILL enter IW/ROB
-   val dis_uops              = Wire(Vec(DISPATCH_WIDTH, new MicroOp()))
+   val dis_valids            = Seq.fill(DISPATCH_WIDTH)(Wire(Bool())) // true if uop WILL enter IW/ROB
+   val dis_uops              = Seq.fill(DISPATCH_WIDTH)(Wire(new MicroOp()))
 
    // Issue Stage/Register Read
-   val iss_valids            = Wire(Vec(issue_width, Bool()))
-   val iss_uops              = Wire(Vec(issue_width, new MicroOp()))
+   val iss_valids            = Seq.fill(issue_width)(Wire(Bool()))
+   val iss_uops              = Seq.fill(issue_width)(Wire(new MicroOp()))
    val bypasses              = Wire(new BypassData(exe_units.num_total_bypass_ports, register_width))
 
    // Branch Unit
@@ -283,7 +283,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    var dec_last_inst_was_stalled = Bool(false)
 
    // stall fetch/dcode because we ran out of branch tags
-   val branch_mask_full = Wire(Vec(DECODE_WIDTH, Bool()))
+   val branch_mask_full = Seq.fill(DECODE_WIDTH)(Wire(Bool()))
 
    for (w <- 0 until DECODE_WIDTH)
    {
@@ -343,7 +343,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
    }
    .otherwise
    {
-      dec_finished_mask := dec_will_fire.toBits | dec_finished_mask
+      dec_finished_mask := Cat(dec_will_fire.reverse) | dec_finished_mask
    }
 
    //-------------------------------------------------------------
@@ -362,7 +362,7 @@ class BOOMCore(implicit p: Parameters) extends BoomModule()(p)
       dec_uops(w).br_mask := dec_brmask_logic.io.br_mask(w)
    }
 
-   branch_mask_full := dec_brmask_logic.io.is_full
+   (branch_mask_full zip dec_brmask_logic.io.is_full) foreach { case (x, y) => x := y }
 
    //-------------------------------------------------------------
    // LD/ST Unit Allocation Logic

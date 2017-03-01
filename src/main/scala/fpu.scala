@@ -205,7 +205,7 @@ class FPU(implicit p: Parameters) extends BoomModule()(p)
    io.resp.bits.fflags.bits.flags := fpu_out.exc
 
 // TODO why is this assertion failing?
-//   assert (PopCount(Vec(ifpu.io.out, fpiu_out, fpmu.io.out, sfma.io.out, dfma.io.out).map(_.valid)) <= UInt(1),
+//   assert (PopCount(Seq(ifpu.io.out, fpiu_out, fpmu.io.out, sfma.io.out, dfma.io.out).map(_.valid)) <= UInt(1),
 //      "Multiple FPU units are firing requests.")
 }
 

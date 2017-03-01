@@ -52,7 +52,7 @@ class RegisterFile( num_registers: Int
 
    // --------------------------------------------------------------
 
-   val read_data = Wire(Vec(num_read_ports, Bits(width = register_width)))
+   val read_data = Seq.fill(num_read_ports)(Wire(Bits(width = register_width)))
 
    for (i <- 0 until num_read_ports)
    {
@@ -71,7 +71,7 @@ class RegisterFile( num_registers: Int
                                                   x.addr =/= UInt(0) &&
                                                   x.addr === io.read_ports(i).addr)
 
-         val bypass_data = Mux1H(Vec(bypass_ens), Vec(io.write_ports.map(_.data)))
+         val bypass_data = Mux1H(bypass_ens, io.write_ports map (_.data))
 
          io.read_ports(i).data := Mux(bypass_ens.reduce(_|_), bypass_data, read_data(i))
       }
